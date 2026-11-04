@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu Planner: add-on dashboard (mockup)</title>
+<style>
+/* Home Assistant theme variables (light). Dark values are in [data-theme="dark"] below. */
+:root {
+  --primary-color: #03a9f4;
+  --accent-color: #ff9800;
+  --primary-background-color: #fafafa;
+  --card-background-color: #ffffff;
+  --primary-text-color: #212121;
+  --secondary-text-color: #727272;
+  --disabled-text-color: #bdbdbd;
+  --divider-color: #e0e0e0;
+  --input-fill-color: #f3f3f3;
+  --ha-card-border-radius: 12px;
+  --ha-card-box-shadow: 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12), 0 3px 1px -2px rgba(0,0,0,.2);
+  --app-header-background-color: #03a9f4;
+  --app-header-text-color: #ffffff;
+  --sidebar-background-color: #ffffff;
+  --success-color: #43a047;
+  --info-color: #039be5;
+  --warning-color: #ffa600;
+  --warning-text-color: #8a5300;
+  --error-color: #db4437;
+  --purple-color: #8e24aa;
+}
+[data-theme="dark"] {
+  --primary-color: #03a9f4;
+  --accent-color: #ff9800;
+  --primary-background-color: #111111;
+  --card-background-color: #1c1c1c;
+  --primary-text-color: #e1e1e1;
+  --secondary-text-color: #9b9b9b;
+  --disabled-text-color: #5c5c5c;
+  --divider-color: #333333;
+  --input-fill-color: #2a2a2a;
+  --ha-card-box-shadow: 0 2px 2px 0 rgba(0,0,0,.4), 0 1px 5px 0 rgba(0,0,0,.3);
+  --app-header-background-color: #1c1c1c;
+  --app-header-text-color: #e1e1e1;
+  --sidebar-background-color: #1c1c1c;
+  --success-color: #66bb6a;
+  --info-color: #29b6f6;
+  --warning-color: #ffa726;
+  --warning-text-color: #ffb74d;
+  --error-color: #ef5350;
+  --purple-color: #ce93d8;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: Roboto, "Segoe UI", system-ui, sans-serif;
+  background: var(--primary-background-color, #fafafa);
+  color: var(--primary-text-color, #212121);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; margin: -1px;
+}
+.ico { width: 24px; height: 24px; fill: currentColor; flex: 0 0 auto; }
+.muted { color: var(--secondary-text-color, #727272); }
+:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
+
+/* Layout: sidebar on desktop, top tab strip on mobile */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 256px; flex: 0 0 256px;
+  background: var(--sidebar-background-color, #fff);
+  border-right: 1px solid var(--divider-color, #e0e0e0);
+  position: sticky; top: 0; height: 100vh;
+  padding: 72px 12px 16px;
+  display: flex; flex-direction: column;
+}
+.tablist { display: flex; flex-direction: column; gap: 4px; }
+.tab {
+  display: flex; align-items: center; gap: 20px;
+  height: 48px; width: 100%; padding: 0 16px;
+  border: 0; border-radius: 24px; background: transparent;
+  color: var(--secondary-text-color, #727272);
+  font-weight: 500; font-size: 14px; text-align: left; cursor: pointer; white-space: nowrap;
+}
+.tab .ico { width: 24px; height: 24px; }
+.tab:hover { background: rgba(127,127,127,.08); }
+.tab[aria-selected="true"] {
+  color: var(--primary-color, #03a9f4);
+  background: color-mix(in srgb, var(--primary-color, #03a9f4) 14%, transparent);
+}
+.sidebar-foot { margin-top: auto; padding: 12px 16px; font-size: 12px; color: var(--secondary-text-color, #727272); }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.appbar {
+  height: 64px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 20px;
+  background: var(--app-header-background-color, #03a9f4);
+  color: var(--app-header-text-color, #fff);
+  position: sticky; top: 0; z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,.2);
+}
+.appbar h1 { font-size: 20px; font-weight: 400; flex: 1; letter-spacing: .01em; }
+.appbar .ico { width: 24px; height: 24px; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent;
+  color: var(--secondary-text-color, #727272); display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; flex: 0 0 auto;
+}
+.icon-btn:hover { background: rgba(127,127,127,.12); }
+.icon-btn[aria-pressed="true"] { color: var(--primary-color, #03a9f4); }
+.appbar .icon-btn { color: inherit; }
+.theme-toggle .ico-sun { display: none; }
+[data-theme="dark"] .theme-toggle .ico-moon { display: none; }
+[data-theme="dark"] .theme-toggle .ico-sun { display: block; }
+
+.content { padding: 20px; max-width: 1080px; width: 100%; }
+.panel-title { font-size: 22px; font-weight: 400; margin: 0 0 16px; }
+
+.card {
+  background: var(--card-background-color, #fff);
+  border-radius: var(--ha-card-border-radius, 12px);
+  box-shadow: var(--ha-card-box-shadow);
+  padding: 16px 16px 12px;
+  margin-bottom: 16px;
+}
+.card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.card-head h2 { font-size: 16px; font-weight: 500; flex: 1; min-width: 160px; }
+.card-head .muted { font-size: 13px; }
+.card h3 { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 36px; padding: 0 16px; border-radius: 18px; border: 1px solid transparent;
+  background: transparent; color: var(--primary-color, #03a9f4);
+  font-weight: 500; font-size: 14px; letter-spacing: .01em; cursor: pointer; white-space: nowrap;
+}
+.btn .ico { width: 18px; height: 18px; }
+.btn-primary { background: var(--primary-color, #03a9f4); color: #fff; }
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-outlined { border-color: var(--divider-color, #e0e0e0); color: var(--primary-text-color, #212121); }
+.btn-danger { color: var(--error-color, #db4437); }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* Badges and banners */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px;
+  border-radius: 11px; font-size: 12px; font-weight: 500; white-space: nowrap;
+}
+.badge-planned { background: rgba(3,155,229,.14); color: var(--info-color, #039be5); }
+.badge-pinned { background: rgba(142,36,170,.14); color: var(--purple-color, #8e24aa); }
+.badge-eaten { background: rgba(67,160,71,.16); color: var(--success-color, #43a047); }
+.badge-empty { background: rgba(219,68,55,.14); color: var(--error-color, #db4437); }
+.badge-replaced { background: rgba(255,166,0,.18); color: var(--warning-text-color, #8a5300); }
+.badge-verified { background: rgba(67,160,71,.16); color: var(--success-color, #43a047); }
+.badge-unverified { background: rgba(255,166,0,.18); color: var(--warning-text-color, #8a5300); }
+.badge .ico { width: 14px; height: 14px; }
+
+.banner {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 16px;
+  border-radius: var(--ha-card-border-radius, 12px);
+  background: rgba(255,166,0,.14); color: var(--primary-text-color, #212121);
+  border-left: 4px solid var(--warning-color, #ffa600);
+}
+.banner > .ico { color: var(--warning-color, #ffa600); }
+.banner > div { flex: 1; }
+.banner .btn { height: 32px; }
+.banner-error { background: rgba(219,68,55,.12); border-left-color: var(--error-color, #db4437); }
+.banner-error > .ico { color: var(--error-color, #db4437); }
+
+/* Menu window */
+.day-list { list-style: none; margin: 0; padding: 0; }
+.day {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 10px 0; border-top: 1px solid var(--divider-color, #e0e0e0);
+}
+.day:first-child { border-top: 0; }
+.day-date {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 56px; height: 56px; border-radius: 12px; background: var(--input-fill-color, #f3f3f3);
+}
+.day-date .dow { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--secondary-text-color, #727272); }
+.day-date .dnum { font-size: 20px; font-weight: 500; line-height: 1.1; }
+.day-date .mon { font-size: 11px; color: var(--secondary-text-color, #727272); }
+.day.is-today .day-date { background: var(--primary-color, #03a9f4); color: #fff; }
+.day.is-today .day-date .dow, .day.is-today .day-date .mon { color: #fff; }
+.day-body { min-width: 0; }
+.dinner { font-size: 15px; margin-bottom: 6px; overflow-wrap: anywhere; }
+.dinner.none { color: var(--error-color, #db4437); font-style: italic; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.day-actions { display: flex; gap: 2px; }
+.day-actions .icon-btn { width: 36px; height: 36px; }
+.day-actions .icon-btn[aria-pressed="true"] { color: var(--success-color, #43a047); }
+.day-actions .icon-btn[aria-pressed="true"][data-action="pin"] { color: var(--purple-color, #8e24aa); }
+
+/* Items */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.search {
+  flex: 1 1 220px; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+  border-radius: 20px; background: var(--input-fill-color, #f3f3f3); color: var(--secondary-text-color, #727272);
+}
+.search input { border: 0; background: transparent; flex: 1; outline: none; min-width: 0; color: var(--primary-text-color, #212121); }
+.select {
+  height: 40px; padding: 0 12px; border-radius: 20px; border: 1px solid var(--divider-color, #e0e0e0);
+  background: var(--card-background-color, #fff);
+}
+.item-list { list-style: none; margin: 0; padding: 0; }
+.item-row {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  padding: 10px 0; border-top: 1px solid var(--divider-color, #e0e0e0);
+}
+.item-row:first-child { border-top: 0; }
+.type-ico {
+  width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--input-fill-color, #f3f3f3); color: var(--primary-color, #03a9f4);
+}
+.type-ico .ico { width: 22px; height: 22px; }
+.type-ico.veg { color: var(--success-color, #43a047); }
+.type-ico.carb { color: var(--warning-text-color, #8a5300); }
+.item-meta { font-size: 12px; color: var(--secondary-text-color, #727272); margin-top: 2px; }
+.item-name { font-size: 15px; font-weight: 500; }
+.item-status { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+/* Dialog */
+.scrim {
+  position: fixed; inset: 0; background: rgba(0,0,0,.48);
+  display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 50;
+}
+.scrim[hidden] { display: none; }
+.dialog {
+  width: min(640px, 100%); max-height: calc(100vh - 48px);
+  display: flex; flex-direction: column;
+  background: var(--card-background-color, #fff); border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35);
+}
+.dialog-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 0 24px; }
+.dialog-head h2 { font-size: 20px; font-weight: 500; flex: 1; }
+.dialog-body { overflow: auto; padding: 12px 24px 8px; display: flex; flex-direction: column; gap: 18px; }
+.dialog-foot {
+  display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+  padding: 12px 16px 16px 24px; border-top: 1px solid var(--divider-color, #e0e0e0);
+}
+.dialog-foot .grow { flex: 1; }
+
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > label, .field > .lbl, fieldset legend {
+  font-size: 12px; font-weight: 500; color: var(--secondary-text-color, #727272); padding: 0;
+}
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.input {
+  height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--divider-color, #e0e0e0);
+  background: var(--input-fill-color, #f3f3f3); color: var(--primary-text-color, #212121); font-size: 15px; width: 100%;
+}
+.input:focus { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: -1px; }
+.helper { font-size: 12px; color: var(--secondary-text-color, #727272); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+
+/* Segmented control (radio) and chips (checkbox) */
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg label, .chip { position: relative; cursor: pointer; }
+.seg input, .chip input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.seg span, .chip span {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 17px;
+  border: 1px solid var(--divider-color, #e0e0e0); background: transparent; font-size: 14px; user-select: none;
+}
+.seg input:checked + span, .chip input:checked + span {
+  background: color-mix(in srgb, var(--primary-color, #03a9f4) 16%, transparent);
+  border-color: var(--primary-color, #03a9f4); color: var(--primary-color, #03a9f4); font-weight: 500;
+}
+.chip input:checked + span::before { content: "\2713"; font-size: 13px; }
+.chip input:focus-visible + span, .seg input:focus-visible + span { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Switch: native checkbox with role="switch" */
+.switch-row { display: flex; align-items: flex-start; gap: 12px; }
+.switch-row .texts { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.switch-row .title { font-size: 14px; }
+input.switch {
+  appearance: none; -webkit-appearance: none; margin: 2px 0 0; flex: 0 0 36px;
+  width: 36px; height: 20px; border-radius: 10px; position: relative; cursor: pointer;
+  background: var(--disabled-text-color, #bdbdbd); transition: background .2s;
+}
+input.switch::before {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+input.switch:checked { background: var(--primary-color, #03a9f4); }
+input.switch:checked::before { transform: translateX(16px); }
+input.switch:focus-visible { outline: 2px solid var(--primary-color, #03a9f4); outline-offset: 2px; }
+
+/* Nutrition block */
+.nutrition {
+  border: 1px solid var(--divider-color, #e0e0e0); border-radius: 12px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.nutrition-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nutrition-head h3 { flex: 1; margin: 0; }
+.match {
+  display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 10px;
+  background: rgba(3,169,244,.08); border: 1px solid rgba(3,169,244,.3);
+}
+.match .texts { flex: 1; font-size: 13px; }
+.match .texts strong { font-weight: 500; display: block; font-size: 14px; }
+.match .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.match[hidden] { display: none; }
+.match .btn { height: 32px; font-size: 13px; }
+
+/* Stock */
+.stock-row { padding: 12px 0; border-top: 1px solid var(--divider-color, #e0e0e0); }
+.stock-row:first-child { border-top: 0; padding-top: 0; }
+.stock-line { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.stock-line .name { flex: 1 1 160px; min-width: 0; }
+.stock-line .name strong { font-weight: 500; font-size: 15px; display: block; }
+.answer { display: flex; gap: 6px; }
+.answer button {
+  height: 34px; min-width: 64px; padding: 0 14px; border-radius: 17px; cursor: pointer;
+  border: 1px solid var(--divider-color, #e0e0e0); background: transparent; font-weight: 500;
+}
+.answer button[aria-pressed="true"][data-value="yes"] { background: var(--success-color, #43a047); border-color: var(--success-color, #43a047); color: #fff; }
+.answer button[aria-pressed="true"][data-value="no"] { background: var(--error-color, #db4437); border-color: var(--error-color, #db4437); color: #fff; }
+.answer button:disabled { opacity: .5; }
+.preview {
+  margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: 13px;
+  background: rgba(219,68,55,.1); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+}
+.preview[hidden] { display: none; }
+.preview .texts { flex: 1 1 200px; }
+.preview strong { color: var(--error-color, #db4437); font-weight: 500; }
+
+/* Rules */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.rule-list { list-style: none; margin: 0; padding: 0; }
+.rule-list li {
+  display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--divider-color, #e0e0e0);
+}
+.rule-list li:first-child { border-top: 0; }
+.rule-list .texts { flex: 1; min-width: 0; }
+.rule-kind { font-size: 12px; color: var(--secondary-text-color, #727272); }
+.builder-preview { font-size: 13px; padding: 10px 12px; border-radius: 10px; background: var(--input-fill-color, #f3f3f3); }
+
+/* Categories table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 10px 8px; border-top: 1px solid var(--divider-color, #e0e0e0); vertical-align: middle; }
+th { font-size: 12px; font-weight: 500; color: var(--secondary-text-color, #727272); border-top: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td .num-input { width: 72px; height: 36px; text-align: right; }
+.starter { font-size: 11px; color: var(--secondary-text-color, #727272); border: 1px solid var(--divider-color, #e0e0e0); border-radius: 8px; padding: 1px 6px; margin-left: 6px; }
+
+/* Settings */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.settings-grid > .card { margin-bottom: 0; }
+.range-row { display: flex; align-items: center; gap: 12px; }
+.range-row input[type="range"] { flex: 1; accent-color: var(--primary-color, #03a9f4); }
+.range-row output { min-width: 84px; text-align: right; font-weight: 500; }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper .input { width: 84px; text-align: center; }
+.form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+/* Import / export */
+.file-pick { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.file-pick input[type="file"] { max-width: 100%; font-size: 13px; }
+.preview-block { border: 1px solid var(--divider-color, #e0e0e0); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.counts { display: flex; gap: 12px; flex-wrap: wrap; }
+.count { padding: 8px 14px; border-radius: 10px; background: var(--input-fill-color, #f3f3f3); min-width: 120px; }
+.count strong { display: block; font-size: 22px; font-weight: 500; }
+.count.added strong { color: var(--success-color, #43a047); }
+.count.skipped strong { color: var(--warning-text-color, #8a5300); }
+.skip-list { margin: 0; padding-left: 18px; font-size: 13px; color: var(--secondary-text-color, #727272); }
+.check-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.check-row input { width: 18px; height: 18px; accent-color: var(--primary-color, #03a9f4); }
+
+/* Responsive: mobile (390px) uses a top header with a horizontal tab strip */
+@media (max-width: 900px) {
+  .app { flex-direction: column; }
+  .sidebar {
+    position: static; width: 100%; height: auto; flex: none; padding: 0;
+    border-right: 0; border-bottom: 1px solid var(--divider-color, #e0e0e0);
+  }
+  .tablist {
+    flex-direction: row; overflow-x: auto; gap: 4px; padding: 6px 8px; scrollbar-width: none;
+  }
+  .tablist::-webkit-scrollbar { display: none; }
+  .tab { width: auto; height: 40px; padding: 0 14px; flex: 0 0 auto; }
+  .tab .ico { width: 20px; height: 20px; }
+  .sidebar-foot { display: none; }
+  .two-col, .settings-grid, .grid-2 { grid-template-columns: 1fr; }
+  .sidebar { padding-top: 0; }
+}
+@media (max-width: 600px) {
+  .content { padding: 12px; }
+  .panel-title { font-size: 20px; }
+  .appbar { height: 56px; padding: 0 8px 0 16px; }
+  .appbar h1 { font-size: 18px; }
+  .day { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; }
+  .day-date { width: 52px; height: 52px; }
+  .day-actions { grid-column: 2; justify-content: flex-start; }
+  .card-head h2 { min-width: 0; }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scrim { padding: 0; align-items: stretch; }
+  .dialog { width: 100%; max-height: none; height: 100%; border-radius: 0; }
+  .dialog-body { padding: 12px 16px; }
+  .dialog-foot { padding: 12px 16px; }
+  .settings-grid > .card { margin-bottom: 0; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .item-row { grid-template-columns: 40px minmax(0, 1fr); }
+  .item-row > .btn { grid-column: 2; justify-self: start; }
+}
+</style>
+</head>
+<body>
+
+<!-- Icon sprite (Material Design Icons style, 24 x 24 paths) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11z"/></symbol>
+    <symbol id="i-items" viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L3.91 3.5a4 4 0 0 0 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13z"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4a2 2 0 0 0-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58s1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41s-.23-1.06-.59-1.42zM5.5 7A1.5 1.5 0 1 1 7 5.5 1.5 1.5 0 0 1 5.5 7z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></symbol>
+    <symbol id="i-package" viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L19.5 8 12 11.82 4.5 8 12 4.18zM4 9.5l7 3.5v7.82l-7-3.5V9.5zm9 11.32V13l7-3.5v6.82l-7 3.5z"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm9.4 4c0-.5 0-1-.1-1.5l2.1-1.6-2-3.5-2.5 1a8 8 0 0 0-2.6-1.5L16 2h-4l-.4 2.7A8 8 0 0 0 9 6.2L6.5 5.2l-2 3.5 2.1 1.6A8 8 0 0 0 6.5 12c0 .5 0 1 .1 1.5l-2.1 1.6 2 3.5 2.5-1a8 8 0 0 0 2.6 1.5L12 22h4l.4-2.7a8 8 0 0 0 2.6-1.5l2.5 1 2-3.5-2.1-1.6c.1-.5.1-1 .1-1.5z"/></symbol>
+    <symbol id="i-swap-v" viewBox="0 0 24 24"><path d="M9 3L5 7h3v10h2V7h3L9 3zm7 14v-10h-2v10h-3l4 4 4-4h-3z"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4zm12.1 12.7l1.4-1.4 2.1 2.1-1.4 1.4zM4.2 18.4l2.1-2.1 1.4 1.4-2.1 2.1zM16.3 5.7l2.1-2.1 1.4 1.4-2.1 2.1z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83zM3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></symbol>
+    <symbol id="i-swap-h" viewBox="0 0 24 24"><path d="M21 9l-4-4v3h-7v2h7v3zM7 11l-4 4 4 4v-3h7v-2H7z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 20.42l-6.21-6.21 2.83-2.83L9 14.77l9.88-9.89 2.83 2.83L9 20.42z"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm-1 14.5l7-7-1.41-1.41L11 13.67 7.91 10.6 6.5 12z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M13 14h-2v-4h2zm0 4h-2v-2h2zM1 21h22L12 2 1 21z"/></symbol>
+    <symbol id="i-alert-circle" viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3zm0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></symbol>
+    <symbol id="i-delete" viewBox="0 0 24 24"><path d="M9 3v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5V3H9zM7 6h10v13H7V6zm2 2v9h2V8H9zm4 0v9h2V8h-2z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM5 9h4v6h6V9h4l-7-7-7 7z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></symbol>
+    <symbol id="i-protein" viewBox="0 0 24 24"><path d="M15 2.5a5.5 5.5 0 0 0-4.6 8.5L5.8 15.6a2.6 2.6 0 0 0 3.6 3.6l4.6-4.6A5.5 5.5 0 1 0 15 2.5z"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></symbol>
+    <symbol id="i-grain" viewBox="0 0 24 24"><path d="M12 22h-1.2V10.6C8.7 9.9 7 7.9 7 5.5c2.1.2 3.6 1.7 3.9 3.7h.1V6.2c-1.6-.5-2.6-2-2.6-3.7 2.1.1 3.4 1.5 3.7 3.4V2h1.2v3.9c.3-1.9 1.6-3.3 3.7-3.4 0 1.7-1 3.2-2.6 3.7v3h.1c.3-2 1.8-3.5 3.9-3.6 0 2.4-1.7 4.4-3.8 5.1V22z"/></symbol>
+    <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 23c-4.4 0-8-3.1-8-7.5 0-3.4 2.2-6 4-8.5.6-.8 1.6-2.2 1.8-4.2C11.5 4.3 12 3 12 2c3 2 6.5 5.6 6.5 10.5 0 .9-.1 1.8-.4 2.6A4.5 4.5 0 0 0 19 15c0 4-3.1 8-7 8z"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><path d="M12 2A10 10 0 1 0 22 12 10 10 0 0 0 12 2zm1 17h-2v-2h2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26a2 2 0 1 0-3.41-1.41H8a4 4 0 1 1 7.07 2.5z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></symbol>
+    <symbol id="i-tune" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></symbol>
+    <symbol id="i-restaurant" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+
+  <nav class="sidebar" aria-label="Menu Planner sections">
+    <div class="tablist" role="tablist" aria-label="Menu Planner sections" aria-orientation="vertical">
+      <button class="tab" role="tab" id="tab-menu" data-tab="menu" aria-selected="true" aria-controls="panel-menu" tabindex="0">
+        <svg class="ico" aria-hidden="true"><use href="#i-calendar"/></svg><span>Menu</span>
+      </button>
+      <button class="tab" role="tab" id="tab-items" data-tab="items" aria-selected="false" aria-controls="panel-items" tabindex="-1">
+        <svg class="ico" aria-hidden="true"><use href="#i-items"/></svg><span>Items</span>
+      </button>
+      <button class="tab" role="tab" id="tab-categories" data-tab="categories" aria-selected="false" aria-controls="panel-categories" tabindex="-1">
+        <svg class="ico" aria-hidden="true"><use href="#i-tag"/></svg><span>Categories</span>
+      </button>
+      <button class="tab" role="tab" id="tab-rules" data-tab="rules" aria-selected="false" aria-controls="panel-rules" tabindex="-1">
+        <svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg><span>Rules</span>
+      </button>
+      <button class="tab" role="tab" id="tab-stock" data-tab="stock" aria-selected="false" aria-controls="panel-stock" tabindex="-1">
+        <svg class="ico" aria-hidden="true"><use href="#i-package"/></svg><span>Stock</span>
+      </button>
+      <button class="tab" role="tab" id="tab-settings" data-tab="settings" aria-selected="false" aria-controls="panel-settings" tabindex="-1">
+        <svg class="ico" aria-hidden="true"><use href="#i-cog"/></svg><span>Settings</span>
+      </button>
+      <button class="tab" role="tab" id="tab-import-export" data-tab="import-export" aria-selected="false" aria-controls="panel-import-export" tabindex="-1">
+        <svg class="ico" aria-hidden="true"><use href="#i-swap-v"/></svg><span>Import / export</span>
+      </button>
+    </div>
+    <p class="sidebar-foot">Add-on panel via Ingress</p>
+  </nav>
+
+  <div class="main">
+    <header class="appbar">
+      <h1>Menu Planner</h1>
+      <button class="icon-btn theme-toggle" type="button" id="theme-toggle" aria-pressed="false" aria-label="Dark theme">
+        <svg class="ico ico-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+        <svg class="ico ico-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+      </button>
+    </header>
+
+    <main class="content">
+
+      <!-- MENU -->
+      <section class="panel" role="tabpanel" id="panel-menu" data-panel="menu" aria-labelledby="tab-menu">
+        <h2 class="panel-title">Menu</h2>
+
+        <div class="banner" role="status">
+          <svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div><strong>2 days need attention:</strong> 1 empty day, 1 missed minimum</div>
+          <button class="btn btn-outlined" type="button">Review</button>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Menu window</h2>
+            <span class="muted">Wed 4 Nov to Tue 17 Nov · 14 days</span>
+            <button class="btn btn-outlined" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg>Re-plan
+            </button>
+          </div>
+
+          <ol class="day-list" aria-label="Menu window, 14 days">
+            <li class="day is-today" data-status="eaten">
+              <time class="day-date" datetime="2026-11-04"><span class="dow">Wed</span><span class="dnum">4</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Salmon · Broccoli · Brown rice</p>
+                <div class="badges"><span class="badge badge-eaten">eaten</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Wed 4 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Wed 4 Nov" title="Pin" disabled><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Wed 4 Nov" title="Edit" disabled><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Wed 4 Nov" title="Swap" disabled><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="true" aria-label="Logged as eaten: Wed 4 Nov" title="Logged as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned" data-replaced="true">
+              <time class="day-date" datetime="2026-11-05"><span class="dow">Thu</span><span class="dnum">5</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Lean beef mince · Carrot · Potatoes</p>
+                <div class="badges"><span class="badge badge-planned">planned</span><span class="badge badge-replaced" title="Replaced after a stock change">replaced</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Thu 5 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Thu 5 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Thu 5 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Thu 5 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Thu 5 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-06"><span class="dow">Fri</span><span class="dnum">6</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Chicken breast · Bell pepper · Quinoa</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Fri 6 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Fri 6 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Fri 6 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Fri 6 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Fri 6 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="pinned">
+              <time class="day-date" datetime="2026-11-07"><span class="dow">Sat</span><span class="dnum">7</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Lentils · Spinach · Bulgur</p>
+                <div class="badges"><span class="badge badge-pinned">pinned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Sat 7 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="true" aria-label="Unpin dinner for Sat 7 Nov" title="Unpin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Sat 7 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Sat 7 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Sat 7 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-08"><span class="dow">Sun</span><span class="dnum">8</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Lean beef mince · Zucchini · Whole-wheat pasta</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Sun 8 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Sun 8 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Sun 8 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Sun 8 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Sun 8 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-09"><span class="dow">Mon</span><span class="dnum">9</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Chicken breast · Green beans · Sweet potato</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Mon 9 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Mon 9 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Mon 9 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Mon 9 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Mon 9 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="empty">
+              <time class="day-date" datetime="2026-11-10"><span class="dow">Tue</span><span class="dnum">10</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner none">No dinner planned</p>
+                <div class="badges"><span class="badge badge-empty">empty</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Tue 10 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Tue 10 Nov" title="Pin" disabled><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Choose dinner for Tue 10 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Suggest dinners for Tue 10 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-label="Log as eaten: Tue 10 Nov" title="Log as eaten" disabled><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-11"><span class="dow">Wed</span><span class="dnum">11</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Cod · Cauliflower · Couscous</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Wed 11 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Wed 11 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Wed 11 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Wed 11 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Wed 11 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-12"><span class="dow">Thu</span><span class="dnum">12</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Chicken breast · Kale · Barley</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Thu 12 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Thu 12 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Thu 12 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Thu 12 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Thu 12 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-13"><span class="dow">Fri</span><span class="dnum">13</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Halloumi · Mushrooms · Polenta</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Fri 13 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Fri 13 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Fri 13 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Fri 13 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Fri 13 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-14"><span class="dow">Sat</span><span class="dnum">14</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Chicken breast · Leek · Noodles</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Sat 14 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Sat 14 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Sat 14 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Sat 14 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Sat 14 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-15"><span class="dow">Sun</span><span class="dnum">15</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Shrimp · Peas · Wholegrain bread</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Sun 15 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Sun 15 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Sun 15 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Sun 15 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Sun 15 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-16"><span class="dow">Mon</span><span class="dnum">16</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Lean beef mince · Aubergine · Tortillas</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Mon 16 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Mon 16 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Mon 16 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Mon 16 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Mon 16 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+
+            <li class="day" data-status="planned">
+              <time class="day-date" datetime="2026-11-17"><span class="dow">Tue</span><span class="dnum">17</span><span class="mon">Nov</span></time>
+              <div class="day-body">
+                <p class="dinner">Chicken breast · Red cabbage · Farro</p>
+                <div class="badges"><span class="badge badge-planned">planned</span></div>
+              </div>
+              <div class="day-actions" role="group" aria-label="Actions for Tue 17 Nov">
+                <button class="icon-btn" type="button" data-action="pin" aria-pressed="false" aria-label="Pin dinner for Tue 17 Nov" title="Pin"><svg class="ico" aria-hidden="true"><use href="#i-pin"/></svg></button>
+                <button class="icon-btn" type="button" data-action="edit" aria-label="Edit dinner for Tue 17 Nov" title="Edit"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg></button>
+                <button class="icon-btn" type="button" data-action="swap" aria-label="Swap dinner for Tue 17 Nov" title="Swap"><svg class="ico" aria-hidden="true"><use href="#i-swap-h"/></svg></button>
+                <button class="icon-btn" type="button" data-action="eaten" aria-pressed="false" aria-label="Log as eaten: Tue 17 Nov" title="Log as eaten"><svg class="ico" aria-hidden="true"><use href="#i-check-circle"/></svg></button>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ITEMS -->
+      <section class="panel" role="tabpanel" id="panel-items" data-panel="items" aria-labelledby="tab-items" hidden>
+        <h2 class="panel-title">Items</h2>
+        <div class="toolbar">
+          <label class="search">
+            <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+            <span class="sr-only">Search items</span>
+            <input type="search" placeholder="Search items" value="">
+          </label>
+          <label class="sr-only" for="filter-type">Filter by type</label>
+          <select class="select" id="filter-type"><option>All types</option><option>Protein</option><option>Vegetable</option><option>Carb</option></select>
+          <label class="sr-only" for="filter-verified">Filter by nutrition status</label>
+          <select class="select" id="filter-verified"><option>Any nutrition status</option><option>Verified</option><option>Unverified</option></select>
+          <button class="btn btn-primary" type="button">
+            <svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Add item
+          </button>
+        </div>
+
+        <div class="card">
+          <ul class="item-list" aria-label="Items">
+            <li class="item-row">
+              <span class="type-ico" aria-hidden="true"><svg class="ico"><use href="#i-protein"/></svg></span>
+              <div><div class="item-name">Salmon</div><div class="item-meta">Protein · Fish, Mediterranean · 300 g · Fat source · Stock tracked</div>
+                <div class="item-status"><span class="badge badge-verified">Verified (Open Food Facts)</span></div></div>
+              <button class="btn btn-outlined" type="button" data-open-dialog="item-dialog"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>Edit</button>
+            </li>
+            <li class="item-row">
+              <span class="type-ico" aria-hidden="true"><svg class="ico"><use href="#i-protein"/></svg></span>
+              <div><div class="item-name">Lean beef mince</div><div class="item-meta">Protein · Red meat · 300 g · Stock tracked</div>
+                <div class="item-status"><span class="badge badge-unverified">Unverified: manual entry</span></div></div>
+              <button class="btn btn-outlined" type="button"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>Edit</button>
+            </li>
+            <li class="item-row">
+              <span class="type-ico veg" aria-hidden="true"><svg class="ico"><use href="#i-leaf"/></svg></span>
+              <div><div class="item-name">Broccoli</div><div class="item-meta">Vegetable · Vegetarian · 250 g</div>
+                <div class="item-status"><span class="badge badge-verified">Verified (Open Food Facts)</span></div></div>
+              <button class="btn btn-outlined" type="button"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>Edit</button>
+            </li>
+            <li class="item-row">
+              <span class="type-ico carb" aria-hidden="true"><svg class="ico"><use href="#i-grain"/></svg></span>
+              <div><div class="item-name">Brown rice</div><div class="item-meta">Carb · Vegetarian, Asian · 150 g</div>
+                <div class="item-status"><span class="badge badge-verified">Verified (Open Food Facts)</span></div></div>
+              <button class="btn btn-outlined" type="button"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>Edit</button>
+            </li>
+            <li class="item-row">
+              <span class="type-ico" aria-hidden="true"><svg class="ico"><use href="#i-protein"/></svg></span>
+              <div><div class="item-name">Chicken breast</div><div class="item-meta">Protein · Poultry · 300 g · Stock tracked</div>
+                <div class="item-status"><span class="badge badge-unverified">Unverified: manual entry</span></div></div>
+              <button class="btn btn-outlined" type="button"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>Edit</button>
+            </li>
+            <li class="item-row">
+              <span class="type-ico veg" aria-hidden="true"><svg class="ico"><use href="#i-leaf"/></svg></span>
+              <div><div class="item-name">Spinach</div><div class="item-meta">Vegetable · Vegetarian · 200 g</div>
+                <div class="item-status"><span class="badge badge-verified">Verified (Open Food Facts)</span></div></div>
+              <button class="btn btn-outlined" type="button"><svg class="ico" aria-hidden="true"><use href="#i-pencil"/></svg>Edit</button>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- CATEGORIES -->
+      <section class="panel" role="tabpanel" id="panel-categories" data-panel="categories" aria-labelledby="tab-categories" hidden>
+        <h2 class="panel-title">Categories</h2>
+        <div class="card">
+          <div class="card-head">
+            <h2>Minimums per 7 days</h2>
+            <button class="btn btn-primary" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Add category</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <caption class="sr-only">Categories with minimum per 7 days and item count</caption>
+              <thead>
+                <tr><th scope="col">Name</th><th scope="col" class="num">Min per 7 days</th><th scope="col" class="num">Items</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Fish<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="1" aria-label="Fish minimum per 7 days"></td><td class="num">2</td><td><button class="icon-btn" type="button" aria-label="Delete Fish"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Vegetarian<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="2" aria-label="Vegetarian minimum per 7 days"></td><td class="num">4</td><td><button class="icon-btn" type="button" aria-label="Delete Vegetarian"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Poultry<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="0" aria-label="Poultry minimum per 7 days"></td><td class="num">1</td><td><button class="icon-btn" type="button" aria-label="Delete Poultry"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Red meat<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="0" aria-label="Red meat minimum per 7 days"></td><td class="num">1</td><td><button class="icon-btn" type="button" aria-label="Delete Red meat"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Legumes<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="0" aria-label="Legumes minimum per 7 days"></td><td class="num">2</td><td><button class="icon-btn" type="button" aria-label="Delete Legumes"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Mediterranean<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="0" aria-label="Mediterranean minimum per 7 days"></td><td class="num">1</td><td><button class="icon-btn" type="button" aria-label="Delete Mediterranean"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Asian<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="0" aria-label="Asian minimum per 7 days"></td><td class="num">1</td><td><button class="icon-btn" type="button" aria-label="Delete Asian"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+                <tr><th scope="row" style="font-weight:500;color:inherit">Mexican<span class="starter">starter</span></th><td class="num"><input class="input num-input" type="number" min="0" value="0" aria-label="Mexican minimum per 7 days"></td><td class="num">1</td><td><button class="icon-btn" type="button" aria-label="Delete Mexican"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- RULES -->
+      <section class="panel" role="tabpanel" id="panel-rules" data-panel="rules" aria-labelledby="tab-rules" hidden>
+        <h2 class="panel-title">Rules</h2>
+
+        <div class="banner banner-error" role="alert">
+          <svg class="ico" aria-hidden="true"><use href="#i-alert-circle"/></svg>
+          <div><strong>Feasibility warning:</strong> the minimum "Vegetarian: 2 per 7 days" cannot be met. Only 1 valid vegetarian dinner exists with the current blacklist and stock.</div>
+          <button class="btn btn-outlined" type="button">Show details</button>
+        </div>
+
+        <div class="two-col">
+          <section class="card" aria-labelledby="blacklist-title">
+            <div class="card-head"><h2 id="blacklist-title">Blacklist</h2></div>
+            <ul class="rule-list">
+              <li>
+                <div class="texts"><div>Fish + Red meat</div><div class="rule-kind">Combination · dinners with both are never planned</div></div>
+                <button class="icon-btn" type="button" aria-label="Delete rule Fish + Red meat"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button>
+              </li>
+              <li>
+                <div class="texts"><div>Shrimp</div><div class="rule-kind">Item · never planned</div></div>
+                <button class="icon-btn" type="button" aria-label="Delete rule Shrimp"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card" aria-labelledby="whitelist-title">
+            <div class="card-head"><h2 id="whitelist-title">Whitelist</h2></div>
+            <ul class="rule-list">
+              <li>
+                <div class="texts"><div>Fish + Mediterranean</div><div class="rule-kind">Combination · preferred (bonus)</div></div>
+                <button class="icon-btn" type="button" aria-label="Delete rule Fish + Mediterranean"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button>
+              </li>
+              <li>
+                <div class="texts"><div>Vegetarian + Asian</div><div class="rule-kind">Combination · preferred (bonus)</div></div>
+                <button class="icon-btn" type="button" aria-label="Delete rule Vegetarian + Asian"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg></button>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <section class="card" aria-labelledby="builder-title">
+          <div class="card-head"><h2 id="builder-title">Combination builder</h2></div>
+          <form onsubmit="return false" style="display:flex;flex-direction:column;gap:16px">
+            <div class="field">
+              <span class="lbl" id="builder-cats-label">Categories in the combination</span>
+              <div class="chips" role="group" aria-labelledby="builder-cats-label">
+                <label class="chip"><input type="checkbox" name="cat" value="fish" checked><span>Fish</span></label>
+                <label class="chip"><input type="checkbox" name="cat" value="poultry"><span>Poultry</span></label>
+                <label class="chip"><input type="checkbox" name="cat" value="red-meat" checked><span>Red meat</span></label>
+                <label class="chip"><input type="checkbox" name="cat" value="vegetarian"><span>Vegetarian</span></label>
+                <label class="chip"><input type="checkbox" name="cat" value="legumes"><span>Legumes</span></label>
+                <label class="chip"><input type="checkbox" name="cat" value="asian"><span>Asian</span></label>
+                <label class="chip"><input type="checkbox" name="cat" value="mediterranean"><span>Mediterranean</span></label>
+                <label class="chip"><input type="checkbox" name="cat" value="mexican"><span>Mexican</span></label>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="builder-kind">Kind</label>
+                <select class="input" id="builder-kind"><option value="blacklist" selected>Blacklist (never plan)</option><option value="whitelist">Whitelist (prefer)</option></select>
+              </div>
+              <div class="field">
+                <span class="lbl">Preview</span>
+                <p class="builder-preview">Dinners with both fish and red meat are never planned.</p>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end">
+              <button class="btn btn-primary" type="submit">Add rule</button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <!-- STOCK -->
+      <section class="panel" role="tabpanel" id="panel-stock" data-panel="stock" aria-labelledby="tab-stock" hidden>
+        <h2 class="panel-title">Stock</h2>
+        <div class="card">
+          <div class="card-head">
+            <h2>Items in the window</h2>
+            <span class="muted">Unanswered counts as in stock</span>
+          </div>
+          <p class="muted" style="margin-bottom:12px">Answer no if an item is out. Every dinner in the window that uses it is replaced. Answer yes to restore it.</p>
+
+          <ul style="list-style:none;margin:0;padding:0" aria-label="Stock by item">
+            <li class="stock-row" data-stock="chicken">
+              <div class="stock-line">
+                <div class="name"><strong>Chicken breast</strong><span class="muted">In 5 dinners</span></div>
+                <div class="answer" role="group" aria-label="Chicken breast in stock?">
+                  <button type="button" data-answer="yes" data-value="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-answer="no" data-value="no" aria-pressed="true">No</button>
+                </div>
+              </div>
+              <div class="preview stock-preview" role="status">
+                <div class="texts"><strong>Replaces 5 dinners</strong> · Fri 6, Mon 9, Thu 12, Sat 14 and Tue 17 Nov will be re-planned. Chicken breast goes on the shopping list.</div>
+                <button class="btn btn-outlined" type="button">Cancel</button>
+                <button class="btn btn-primary" type="button">Save no</button>
+              </div>
+            </li>
+            <li class="stock-row" data-stock="beef">
+              <div class="stock-line">
+                <div class="name"><strong>Lean beef mince</strong><span class="muted">In 3 dinners</span></div>
+                <div class="answer" role="group" aria-label="Lean beef mince in stock?">
+                  <button type="button" data-answer="yes" data-value="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-answer="no" data-value="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+            </li>
+            <li class="stock-row" data-stock="cod">
+              <div class="stock-line">
+                <div class="name"><strong>Cod</strong><span class="muted">In 1 dinner</span></div>
+                <div class="answer" role="group" aria-label="Cod in stock?">
+                  <button type="button" data-answer="yes" data-value="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-answer="no" data-value="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+            </li>
+            <li class="stock-row" data-stock="halloumi">
+              <div class="stock-line">
+                <div class="name"><strong>Halloumi</strong><span class="muted">In 1 dinner</span></div>
+                <div class="answer" role="group" aria-label="Halloumi in stock?">
+                  <button type="button" data-answer="yes" data-value="yes" aria-pressed="false">Yes</button>
+                  <button type="button" data-answer="no" data-value="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+            </li>
+            <li class="stock-row" data-stock="salmon">
+              <div class="stock-line">
+                <div class="name"><strong>Salmon</strong><span class="muted">In 1 dinner</span></div>
+                <div class="answer" role="group" aria-label="Salmon in stock?">
+                  <button type="button" data-answer="yes" data-value="yes" aria-pressed="true">Yes</button>
+                  <button type="button" data-answer="no" data-value="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+            </li>
+            <li class="stock-row" data-stock="shrimp">
+              <div class="stock-line">
+                <div class="name"><strong>Shrimp</strong><span class="muted">In 1 dinner</span></div>
+                <div class="answer" role="group" aria-label="Shrimp in stock?">
+                  <button type="button" data-answer="yes" data-value="yes" aria-pressed="true">Yes</button>
+                  <button type="button" data-answer="no" data-value="no" aria-pressed="false">No</button>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="panel" role="tabpanel" id="panel-settings" data-panel="settings" aria-labelledby="tab-settings" hidden>
+        <h2 class="panel-title">Settings</h2>
+        <form class="settings-grid" onsubmit="return false" aria-label="Settings">
+          <section class="card" aria-labelledby="set-window">
+            <h3 id="set-window">Menu window</h3>
+            <div class="field">
+              <label for="window-days">Window length</label>
+              <div class="range-row">
+                <input type="range" id="window-days" min="7" max="60" step="1" value="14" aria-describedby="window-help">
+                <output for="window-days" id="window-out">14 days</output>
+              </div>
+              <span class="helper" id="window-help">Days from today, from 7 to 60. Default 14.</span>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="set-household">
+            <h3 id="set-household">Household</h3>
+            <div class="grid-2">
+              <div class="field">
+                <label for="household">Household size</label>
+                <input class="input" type="number" id="household" min="1" max="10" value="2" aria-describedby="household-help">
+                <span class="helper" id="household-help">Scales portions for grams and kcal.</span>
+              </div>
+              <div class="field">
+                <label for="repeat-gap">Repeat gap (days)</label>
+                <input class="input" type="number" id="repeat-gap" min="0" max="60" value="14" aria-describedby="gap-help">
+                <span class="helper" id="gap-help">Soft rule: an item is not planned again within this gap.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="set-balance">
+            <h3 id="set-balance">Balance targets (healthy plate)</h3>
+            <div class="grid-2">
+              <div class="field">
+                <label for="t-veg">Vegetables and fruit (%)</label>
+                <input class="input" type="number" id="t-veg" min="0" max="100" value="50">
+              </div>
+              <div class="field">
+                <label for="t-protein">Protein (%)</label>
+                <input class="input" type="number" id="t-protein" min="0" max="100" value="25">
+              </div>
+              <div class="field">
+                <label for="t-carbs">Carbs (%)</label>
+                <input class="input" type="number" id="t-carbs" min="0" max="100" value="25">
+              </div>
+              <div class="field">
+                <label for="t-tol">Tolerance (points)</label>
+                <input class="input" type="number" id="t-tol" min="0" max="50" value="10" aria-describedby="tol-help">
+              </div>
+            </div>
+            <span class="helper" id="tol-help">Targets total 100%. Penalty applies beyond the tolerance. Verify against the official source before release.</span>
+          </section>
+
+          <section class="card" aria-labelledby="set-template">
+            <h3 id="set-template">Dinner template</h3>
+            <div class="grid-2">
+              <div class="field">
+                <label for="slot-protein">Protein slots</label>
+                <div class="stepper"><input class="input" type="number" id="slot-protein" min="0" max="2" value="1"></div>
+              </div>
+              <div class="field">
+                <label for="slot-veg">Vegetable slots</label>
+                <div class="stepper"><input class="input" type="number" id="slot-veg" min="0" max="2" value="1"></div>
+              </div>
+              <div class="field">
+                <label for="slot-carb">Carb slots</label>
+                <div class="stepper"><input class="input" type="number" id="slot-carb" min="0" max="2" value="1"></div>
+              </div>
+            </div>
+            <span class="helper">Each slot is 0 to 2. Every dinner always meets these counts.</span>
+          </section>
+
+          <section class="card" aria-labelledby="set-general">
+            <h3 id="set-general">General</h3>
+            <div class="field">
+              <label for="language">Language</label>
+              <select class="input" id="language">
+                <option value="en" selected>English</option>
+                <option value="nl">Nederlands</option>
+              </select>
+            </div>
+            <div class="field" style="margin-top:12px">
+              <label for="usda-key">USDA API key (optional)</label>
+              <input class="input" type="password" id="usda-key" autocomplete="off" placeholder="Not set" aria-describedby="usda-help">
+              <span class="helper" id="usda-help">Stored as a secret. Never included in exports.</span>
+            </div>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-outlined" type="button"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg>Retry failed lookups</button>
+              <span class="helper">Next automatic retry in 12 min.</span>
+            </div>
+          </section>
+
+          <div class="form-actions" style="grid-column:1/-1">
+            <button class="btn btn-primary" type="submit">Save settings</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- IMPORT / EXPORT -->
+      <section class="panel" role="tabpanel" id="panel-import-export" data-panel="import-export" aria-labelledby="tab-import-export" hidden>
+        <h2 class="panel-title">Import / export</h2>
+
+        <div class="two-col">
+          <section class="card" aria-labelledby="export-title">
+            <div class="card-head"><h2 id="export-title">Export</h2></div>
+            <p class="muted" style="margin-bottom:12px">One JSON file (schema version 1) with items, categories, minimums, rules, template, settings without secrets, and menu history. Names are used instead of IDs.</p>
+            <button class="btn btn-primary" type="button"><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>Export JSON</button>
+          </section>
+
+          <section class="card" aria-labelledby="import-title">
+            <div class="card-head"><h2 id="import-title">Import</h2></div>
+            <div class="field">
+              <label for="import-file">Export file</label>
+              <div class="file-pick">
+                <input type="file" id="import-file" accept="application/json,.json">
+                <span class="muted" id="file-name">No file chosen</span>
+              </div>
+              <span class="helper">Existing items and categories are matched by name and skipped, not updated.</span>
+            </div>
+          </section>
+        </div>
+
+        <section class="card" aria-labelledby="preview-title" style="margin-top:16px">
+          <div class="card-head">
+            <h2 id="preview-title">Import preview</h2>
+            <span class="muted">menu-planner-export.json · schema version 1</span>
+          </div>
+          <div class="preview-block">
+            <div class="counts" role="status" aria-live="polite">
+              <div class="count added"><span>Added</span><strong>12</strong></div>
+              <div class="count skipped"><span>Skipped</span><strong>4</strong></div>
+            </div>
+            <div>
+              <h3>Skipped</h3>
+              <ul class="skip-list">
+                <li>Item "Salmon" already exists</li>
+                <li>Category "Fish" already exists</li>
+                <li>Rule "Fish + Red meat" already exists</li>
+                <li>Minimum for "Vegetarian" already exists</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Also import (unticked by default)</h3>
+              <label class="check-row"><input type="checkbox"> Settings</label>
+              <label class="check-row"><input type="checkbox"> Menu history</label>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outlined" type="button">Cancel</button>
+              <button class="btn btn-primary" type="button">Import 12 items</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ITEM EDIT DIALOG (opened from Items > Edit; also reachable with #edit-item) -->
+<div class="scrim" id="item-dialog" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="item-dialog-title">
+    <div class="dialog-head">
+      <h2 id="item-dialog-title">Edit item</h2>
+      <button class="icon-btn" type="button" data-close-dialog="item-dialog" aria-label="Close"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <form class="dialog-body" onsubmit="return false">
+      <div class="field">
+        <label for="item-name">Name</label>
+        <input class="input" type="text" id="item-name" value="Salmon" autocomplete="off">
+      </div>
+
+      <fieldset>
+        <legend>Type</legend>
+        <div class="seg" role="radiogroup" aria-label="Type">
+          <label><input type="radio" name="type" value="protein" checked><span><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="#i-protein"/></svg>Protein</span></label>
+          <label><input type="radio" name="type" value="vegetable"><span><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="#i-leaf"/></svg>Vegetable</span></label>
+          <label><input type="radio" name="type" value="carb"><span><svg class="ico" style="width:18px;height:18px" aria-hidden="true"><use href="#i-grain"/></svg>Carb</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Categories</legend>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" checked><span>Fish</span></label>
+          <label class="chip"><input type="checkbox"><span>Poultry</span></label>
+          <label class="chip"><input type="checkbox"><span>Red meat</span></label>
+          <label class="chip"><input type="checkbox"><span>Vegetarian</span></label>
+          <label class="chip"><input type="checkbox"><span>Legumes</span></label>
+          <label class="chip"><input type="checkbox"><span>Asian</span></label>
+          <label class="chip"><input type="checkbox" checked><span>Mediterranean</span></label>
+          <label class="chip"><input type="checkbox"><span>Mexican</span></label>
+        </div>
+      </fieldset>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="item-portion">Portion (g per household)</label>
+          <input class="input" type="number" id="item-portion" min="0" value="300" aria-describedby="portion-help">
+          <span class="helper" id="portion-help">Needed for balance. Without it, the dinner is not balance-scored.</span>
+        </div>
+        <div class="field">
+          <span class="lbl">Flags</span>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <label class="switch-row">
+              <input class="switch" type="checkbox" role="switch" checked>
+              <span class="texts"><span class="title">Fat source</span><span class="helper">Oily fish, nuts, seeds, avocado, oils. Gives a balance bonus.</span></span>
+            </label>
+            <label class="switch-row">
+              <input class="switch" type="checkbox" role="switch" checked>
+              <span class="texts"><span class="title">Track stock</span><span class="helper">Ask in the stock check and skip when out.</span></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <section class="nutrition" aria-labelledby="nutrition-title">
+        <div class="nutrition-head">
+          <h3 id="nutrition-title">Nutrition per 100 g</h3>
+          <span class="badge badge-unverified" id="nutrition-status">Unverified: manual entry</span>
+          <button class="btn btn-outlined" type="button" id="lookup-btn"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>Look up</button>
+        </div>
+
+        <div class="match" id="match-block" role="region" aria-labelledby="match-title" aria-live="polite">
+          <svg class="ico" style="color:var(--primary-color)" aria-hidden="true"><use href="#i-help"/></svg>
+          <div class="texts">
+            <strong id="match-title">Is this the right product?</strong>
+            <div>Open Food Facts: Salmon, Atlantic, farmed, raw</div>
+            <div class="muted">Confirm before the values are used. Balance and kcal stay unknown until confirmed.</div>
+            <div class="actions">
+              <button class="btn btn-primary" type="button" id="confirm-btn">Confirm match</button>
+              <button class="btn btn-outlined" type="button">Choose another</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <div class="field"><label for="n-kcal">kcal</label><input class="input" type="number" id="n-kcal" value="208"></div>
+          <div class="field"><label for="n-protein">Protein (g)</label><input class="input" type="number" id="n-protein" value="20.4" step="0.1"></div>
+          <div class="field"><label for="n-carbs">Carbs (g)</label><input class="input" type="number" id="n-carbs" value="0" step="0.1"></div>
+          <div class="field"><label for="n-fat">Fat (g)</label><input class="input" type="number" id="n-fat" value="13.4" step="0.1"></div>
+        </div>
+        <span class="helper">Manual entry is allowed at any time. Fiber (g) is stored too.</span>
+      </section>
+    </form>
+    <div class="dialog-foot">
+      <button class="btn btn-danger grow" style="justify-content:flex-start;flex:1" type="button"><svg class="ico" aria-hidden="true"><use href="#i-delete"/></svg>Delete</button>
+      <button class="btn btn-outlined" type="button" data-close-dialog="item-dialog">Cancel</button>
+      <button class="btn btn-primary" type="button" data-close-dialog="item-dialog">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var root = document.documentElement;
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('[role="tabpanel"]'));
+
+  function showTab(name, pushHash) {
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("data-tab") === name;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+    });
+    panels.forEach(function (p) { p.hidden = p.getAttribute("data-panel") !== name; });
+    if (pushHash) { history.replaceState(null, "", "#" + name); }
+  }
+
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () { showTab(t.getAttribute("data-tab"), true); });
+    t.addEventListener("keydown", function (e) {
+      var next = null;
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") { next = tabs[(i + 1) % tabs.length]; }
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") { next = tabs[(i - 1 + tabs.length) % tabs.length]; }
+      if (next) { next.focus(); next.click(); e.preventDefault(); }
+    });
+  });
+
+  // Theme toggle (light and dark palettes)
+  var themeBtn = document.getElementById("theme-toggle");
+  themeBtn.addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") !== "dark";
+    root.setAttribute("data-theme", dark ? "dark" : "light");
+    themeBtn.setAttribute("aria-pressed", dark ? "true" : "false");
+    themeBtn.setAttribute("aria-label", dark ? "Light theme" : "Dark theme");
+  });
+
+  // Dialogs
+  function openDialog(id) {
+    var d = document.getElementById(id);
+    d.hidden = false;
+    var first = d.querySelector("input, button");
+    if (first) { first.focus(); }
+  }
+  function closeDialog(id) { document.getElementById(id).hidden = true; }
+
+  document.querySelectorAll("[data-open-dialog]").forEach(function (b) {
+    b.addEventListener("click", function () { openDialog(b.getAttribute("data-open-dialog")); });
+  });
+  document.querySelectorAll("[data-close-dialog]").forEach(function (b) {
+    b.addEventListener("click", function () { closeDialog(b.getAttribute("data-close-dialog")); });
+  });
+  document.querySelectorAll(".scrim").forEach(function (s) {
+    s.addEventListener("click", function (e) { if (e.target === s) { s.hidden = true; } });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { document.querySelectorAll(".scrim").forEach(function (s) { s.hidden = true; }); }
+  });
+
+  // Nutrition: look up -> confirm match -> verified
+  var confirmBtn = document.getElementById("confirm-btn");
+  var matchBlock = document.getElementById("match-block");
+  var status = document.getElementById("nutrition-status");
+  confirmBtn.addEventListener("click", function () {
+    matchBlock.hidden = true;
+    status.textContent = "Verified (Open Food Facts)";
+    status.className = "badge badge-verified";
+  });
+
+  // Day row actions: pin, eaten (toggle aria-pressed)
+  document.querySelectorAll('.day-actions [data-action="pin"], .day-actions [data-action="eaten"]').forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (b.disabled) { return; }
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    });
+  });
+
+  // Stock yes/no: exclusive per item; "no" shows the replacement preview
+  document.querySelectorAll(".stock-row").forEach(function (row) {
+    var buttons = row.querySelectorAll("[data-answer]");
+    var preview = row.querySelector(".stock-preview");
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        buttons.forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); });
+        if (preview) {
+          preview.hidden = b.getAttribute("data-value") !== "no";
+        }
+      });
+    });
+    if (preview) {
+      preview.querySelector(".btn-outlined").addEventListener("click", function () {
+        row.querySelector('[data-value="no"]').setAttribute("aria-pressed", "false");
+        preview.hidden = true;
+      });
+    }
+  });
+
+  // Settings: window length output
+  var windowInput = document.getElementById("window-days");
+  var windowOut = document.getElementById("window-out");
+  windowInput.addEventListener("input", function () { windowOut.textContent = windowInput.value + " days"; });
+
+  // Import: show chosen file name
+  var fileInput = document.getElementById("import-file");
+  fileInput.addEventListener("change", function () {
+    var name = fileInput.files && fileInput.files[0] ? fileInput.files[0].name : "No file chosen";
+    document.getElementById("file-name").textContent = name;
+  });
+
+  // Deep links: #menu, #items, #rules, #stock, #settings, #import-export, #edit-item
+  var hash = (location.hash || "").replace("#", "");
+  if (hash === "edit-item") {
+    showTab("items", false);
+    openDialog("item-dialog");
+  } else if (tabs.some(function (t) { return t.getAttribute("data-tab") === hash; })) {
+    showTab(hash, false);
+  } else {
+    showTab("menu", false);
+  }
+})();
+</script>
+</body>
+</html>
