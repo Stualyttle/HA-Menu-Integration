@@ -6,13 +6,13 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-04
+Last updated: 2026-11-04 (Phase 1)
 
 ## Status
 
-- **Phase:** 0, planning (review done)
-- **Now:** Phase 1 scaffolding is ready to start once you approve the plan
-- **Next:** Phase 1 (scaffolding and API contract)
+- **Phase:** 1, scaffolding and API contract (in progress)
+- **Now:** Live Supervisor checks (discovery, internal port, lifecycle, card registration) need access to a Home Assistant instance
+- **Next:** Phases 2 to 6 can start after the live checks, or in parallel with them
 - **Blockers:** none. The Dutch healthy-plate source (voedingscentrum.nl) could not be fetched, so the balance defaults (PLAN 6.9) are unverified. Check them before release.
 
 ## Phase 0: Planning
@@ -34,16 +34,17 @@ Depends on: none
 
 Depends on: 0. Owner: coordinator (packaging: G).
 
-- [ ] Repository layout and `.gitignore` for Python, Node, and SQLite data (PLAN 12)
-- [ ] `repository.yaml`, `hacs.json`, `addon/config.yaml`
-- [ ] Repository interfaces shared by the data layer and the domain engine (PLAN 14)
-- [ ] Add-on skeleton: Dockerfile with s6, FastAPI app, internal listener with token, ingress listener, options
-- [ ] Integration skeleton: `manifest.json`, config flow with `async_step_hassio`, confirm step
+- [x] Repository layout and `.gitignore` for Python, Node, and SQLite data (PLAN 12)
+- [x] `repository.yaml`, `hacs.json`, `addon/config.yaml` (YAML parse-checked; `addon/build.yaml` base image tag still unverified)
+- [x] Repository interfaces shared by the data layer and the domain engine (PLAN 14): `addon/app/models.py`, `addon/app/ports.py`
+- [x] Add-on skeleton: Dockerfile with s6, FastAPI app, internal listener with token, ingress listener, options
+- [x] Integration skeleton: `manifest.json`, config flow with `async_step_hassio`, confirm step (imports under HA 2026.10.4 harness)
 - [ ] Check: discovery works with no `hassio_api` (the docs say none is needed)
 - [ ] Check: Core reaches the internal port without `ports:`
 - [ ] Check: discovery lifecycle (re-send on start, removal on uninstall)
 - [ ] Check: card registration with `frontend.add_extra_js_url`, or the manual resource fallback
-- [ ] `docs/API.md`: frozen contract (endpoints, schemas, warning codes)
+- [x] `docs/API.md`: frozen contract (endpoints, schemas, warning codes)
+- [x] Lint and tests: `ruff check`, `ruff format --check`, `pytest tests/addon` (9 passed)
 
 ## Phase 2: Data layer
 
@@ -143,4 +144,5 @@ Depends on: 9. Owner: G.
 | 2026-11-04 | `docs/PLAN.md` written. `docs/` and `docs/mockups/` created. |
 | 2026-11-04 | `docs/WORKFILE.md` created. Mockup sub-agent started. |
 | 2026-11-04 | Discovery facts recorded in PLAN 4.3 (no `hassio_api`; repeat discovery updates in place). Phase 3 and 8 dependencies aligned with `todo_deps`. |
+| 2026-11-04 | Phase 1 code written: packaging, add-on skeleton (ingress, internal token listener, discovery), integration config flow, `docs/API.md`. Fixed `HassioServiceInfo` import (now `homeassistant.helpers.service_info.hassio`). Lint and 9 add-on tests pass. Live Supervisor checks pending (need HA access). |
 | 2026-11-04 | Phase 0 review done. Decisions recorded: MIT license; Lit + Material Web; time zone from the integration sync with `TZ` fallback; dinner title = item names joined with " · "; window card = `menu-planner-window-card`; brand icon placeholder; USDA key skipped for now; 12 assumptions accepted. Phase 1 checks need a Supervisor instance (available). | before writing files. Relaunched; `docs/mockups/addon-dashboard.html` and `docs/mockups/lovelace-cards.html` written and checked (no external URLs or resources). Known gaps: desktop card layout wraps to two rows; the week card shows 6 of 14 days; the dark theme is unchecked. |

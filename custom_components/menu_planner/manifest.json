@@ -1,0 +1,14 @@
+{
+  "domain": "menu_planner",
+  "name": "Menu Planner",
+  "codeowners": ["@Stualyttle"],
+  "config_flow": true,
+  "documentation": "https://github.com/Stualyttle/HA-Menu-Integration",
+  "issue_tracker": "https://github.com/Stualyttle/HA-Menu-Integration/issues",
+  "iot_class": "local_polling",
+  "integration_type": "service",
+  "requirements": [],
+  "dependencies": ["frontend", "http", "websocket_api"],
+  "after_dependencies": ["hassio", "shopping_list", "persistent_notification"],
+  "version": "0.1.0"
+}

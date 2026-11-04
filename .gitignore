@@ -1,1 +1,14 @@
 .idea
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+node_modules/
+dist/
+*.db
+*.db-journal
+*.egg-info/
+.coverage
+coverage/

@@ -1,0 +1,15 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Menu Planner is already configured.",
+      "no_discovery": "No Menu Planner add-on was found. Install and start the Menu Planner add-on, then try again.",
+      "unknown_service": "This discovery message is not for Menu Planner."
+    },
+    "step": {
+      "hassio_confirm": {
+        "title": "Menu Planner add-on found",
+        "description": "Do you want to set up {name}?"
+      }
+    }
+  }
+}
