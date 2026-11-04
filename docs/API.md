@@ -11,17 +11,24 @@ Frozen interface between the add-on, the integration, and the frontend. Parallel
 
 - Base path: `/api`. All bodies are JSON (`application/json`, UTF-8).
 - Dates are ISO 8601 `YYYY-MM-DD` in the local time zone sent by the integration on each sync (`time_zone`, IANA name).
-- Errors: `{"error": {"code": "<snake_case>", "message": "<human text>", "details": {}}}` with HTTP 400 (validation), 401 (token), 404, 409 (conflict, e.g. duplicate name), 422 (infeasible rule), 500.
+- Errors: `{"error": {"code": "<snake_case>", "message": "<human text>", "details": {}}}` with HTTP 400 (request or config validation, including an all-zero template), 404, 409 (conflict, e.g. duplicate name, or a day that cannot be edited, or a rejected swap), 500.
+- Auth failure (401) is the exception to the envelope: `{"detail": "invalid or missing token"}` (internal listener only).
+- 422 is reserved for the planned rules check (see below). No route raises it yet.
+- List endpoints return a bare JSON array, not a wrapper object.
 - Language: responses carry no UI text except `message`. Warning and status codes are stable identifiers, translated by the client.
+
+Status column: **Implemented** means the route exists in `addon/app/api/` and has tests. **Planned** means the route is not implemented yet. The panel (`frontend/shared/api/client.js`) calls some planned routes, so those calls fail until they land.
 
 ## Health and sync
 
-| Method | Path | Purpose | Response |
-|---|---|---|---|
-| GET | `/api/health` | Liveness and version | `{status: "ok", version}` |
-| POST | `/api/sync` | Integration sends HA language and time zone each poll | `{language, time_zone, timezone_mismatch: bool}` |
+| Method | Path | Purpose | Response | Status |
+|---|---|---|---|---|
+| GET | `/api/health` | Liveness and version | `{status: "ok", version}` | Implemented |
+| POST | `/api/sync` | Integration sends HA language and time zone each poll | `{language, time_zone, timezone_mismatch: bool}` | Planned |
 
 ## Menu
+
+Planned. No menu router exists yet.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -36,46 +43,59 @@ Day object: `{date, status: planned|pinned|eaten|empty, dinner: {id, items: [{id
 
 ## Items, categories, rules
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET / POST | `/api/items` | List (filters: `type`, `category_id`, `verified`, `track_stock`, `q`) / create |
-| GET / PUT / DELETE | `/api/items/{id}` | Read / update / delete |
-| POST | `/api/items/{id}/nutrition/lookup` | Start an Open Food Facts or USDA lookup |
-| PUT | `/api/items/{id}/nutrition` | Manual entry or confirm a match |
-| GET / POST | `/api/categories` | List (with `min_per_7_days`, `item_count`) / create |
-| GET / PUT / DELETE | `/api/categories/{id}` | Read / update / delete |
-| GET / POST | `/api/rules` | List / create (`kind: blacklist|whitelist`, `scope: combination|item`, `category_ids`, `item_id`, `enabled`) |
-| PUT / DELETE | `/api/rules/{id}` | Update / delete |
-| POST | `/api/rules/check` | Feasibility check without saving; returns `{feasible, affected_days}` |
+| Method | Path | Purpose | Status |
+|---|---|---|---|
+| GET / POST | `/api/items` | List (filters: `type`, `category_id`, `verified`, `track_stock`, `q`) / create (`ItemIn`) | Implemented |
+| GET / PUT / DELETE | `/api/items/{id}` | Read / update / delete | Implemented |
+| POST | `/api/items/{id}/nutrition/lookup` | Start an Open Food Facts or USDA lookup | Planned |
+| PUT | `/api/items/{id}/nutrition` | Manual entry or confirm a match | Planned |
+| GET / POST | `/api/categories` | List / create (`CategoryIn`: `name`, `min_per_7_days` 0–7, `item_ids`) | Implemented |
+| GET / PUT / DELETE | `/api/categories/{id}` | Read / update / delete | Implemented |
+| GET / POST | `/api/rules` | List / create (`RuleIn`: `kind: blacklist|whitelist`, `scope: combination|item`, `category_ids`, `item_id`, `enabled`) | Implemented |
+| PUT / DELETE | `/api/rules/{id}` | Update / delete | Implemented |
+| POST | `/api/rules/check` | Feasibility check without saving; returns `{feasible, affected_days}` | Planned |
 
-Item object: `{id, name, type: protein|vegetable|carb, portion_grams, fat_source, track_stock, category_ids, nutrition: {source, status, kcal, protein_g, carbs_g, fat_g, fiber_g, user_confirmed} | null}`.
+Item object (`ItemOut`): `{id, name, type: protein|vegetable|carb, portion_grams, fat_source, track_stock, category_ids, nutrition: {source, status, kcal, protein_g, carbs_g, fat_g, fiber_g, user_confirmed} | null}`.
+
+Category object (`CategoryOut`): `{id, name, is_starter, min_per_7_days, item_count, item_ids}`.
+
+Rule object (`RuleOut`): `{id, kind, scope, category_ids, item_id, enabled}`.
 
 ## Stock
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/stock?unanswered_first=true` | Distinct items in the window with `in_stock` (`true|false|null`) and `replaces_count` |
-| PUT | `/api/stock/{item_id}` | Set `in_stock`. Response includes `replaced_dates`, `restored_dates`, `shopping` changes |
-| POST | `/api/stock/{item_id}/preview` | `{in_stock: false}` returns `replaces_count` before saving |
+| Method | Path | Purpose | Status |
+|---|---|---|---|
+| GET | `/api/stock?unanswered_first=true` | Items with `track_stock` set, with `in_stock` (`true|false|null`) and `replaces_count` | Implemented |
+| PUT | `/api/stock/{item_id}` | Body `{in_stock: bool|null}`. Response: `{item_id, in_stock, replaced_dates, restored_dates, shopping}` | Implemented (side effects are placeholders until the menu engine is wired) |
+| POST | `/api/stock/{item_id}/preview` | `{in_stock: bool}` returns `{item_id, in_stock, replaces_count}` before saving | Implemented |
 
-## Settings, import, export
+## Settings and template
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET / PUT | `/api/settings` | Read / update: `window_days` (7–60), `household_size`, `repeat_gap_days`, `balance_targets`, `language` (`auto|en|nl`), `usda_api_key` (write-only, never returned) |
-| GET / PUT | `/api/template` | Slot counts per type (0–2 each) |
-| GET | `/api/export` | Export file (`schema_version: 1`, names not IDs, secrets excluded) |
-| POST | `/api/import/preview` | Validate and return `{added, skipped, settings_available}` |
-| POST | `/api/import` | Merge; body includes `include_settings`, `include_history` |
+| Method | Path | Purpose | Status |
+|---|---|---|---|
+| GET / PUT | `/api/settings` | Read `SettingsOut`: `window_days`, `household_size`, `repeat_gap_days`, `balance_targets`, `language`. Update takes `SettingsIn` (all fields optional). `usda_api_key` is write-only and never returned. | Implemented |
+| GET / PUT | `/api/template` | Body `{protein, vegetable, carb}`, each 0–2. An all-zero template returns 400. | Implemented |
+
+`balance_targets` is `{vegetables, protein, carbs, tolerance}`, each 0–100. The three targets must sum to 100 (checked in the domain layer).
+
+## Import and export
+
+Planned. No io router exists yet. The domain-level export and import code is in `addon/app/io/`.
+
+| Method | Path | Purpose | Status |
+|---|---|---|---|
+| GET | `/api/export` | Export file (`schema_version: 1`, names not IDs, secrets excluded) | Planned |
+| POST | `/api/import/preview` | Validate and return `{added, skipped, settings_available}` | Planned |
+| POST | `/api/import` | Merge; body includes `include_settings`, `include_history` | Planned |
 
 ## Warnings
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/warnings` | Unresolved warnings |
-| POST | `/api/warnings/{id}/resolve` | Mark resolved |
+| Method | Path | Purpose | Status |
+|---|---|---|---|
+| GET | `/api/warnings` | Unresolved warnings (bare array) | Implemented |
+| POST | `/api/warnings/{id}/resolve` | Mark resolved. Returns 204. | Implemented |
 
-Warning object: `{id, code, subject: {type: date|item|category, id}, payload, created_at}`.
+Warning object (`WarningOut`): `{id, code, subject: {type: date|item|category, id: string}, payload, created_at}`.
 
 Warning codes (stable):
 
