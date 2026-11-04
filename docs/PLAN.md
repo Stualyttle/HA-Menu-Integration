@@ -48,7 +48,7 @@ Out of scope (v1): breakfast and lunch, allergies and diets, stock quantities, i
 
 - **Add-on** (`addon/`): Python 3.12, FastAPI, SQLite in `/data`. Owns all data, the generator, nutrition lookup, and import/export. Serves the panel through Ingress.
 - **Integration** (`custom_components/menu_planner/`): config flow (discovery), coordinator (polls the add-on), sensors, websocket commands for the cards, services for automations, persistent notifications, shopping-list sync, card bundle serving.
-- **Frontend** (`frontend/`): Lit + Material Web (Material 3). Two bundles: `panel` (add-on UI) and `cards` (Lovelace). Vite build **(proposal)**.
+- **Frontend** (`frontend/`): Lit + Material Web (Material 3), with HA theme variables (decided). Two bundles: `panel` (add-on UI) and `cards` (Lovelace). Vite build **(proposal)**.
 
 ### 4.2 Data-flow rules
 
@@ -81,7 +81,7 @@ Out of scope (v1): breakfast and lunch, allergies and diets, stock quantities, i
 - Cards use `hass.language`. The panel uses the language the integration syncs (`hass.config.language`), with English fallback.
 - Translations: `frontend/shared/i18n/en.json` and `nl.json` for the panel and cards; HA `translations/` for the integration.
 - The add-on returns warning codes, not text. Text is translated in the frontends and the integration.
-- The add-on reads `TZ` from the environment. The integration also syncs HA's time zone; a mismatch shows a warning in the panel.
+- The add-on learns HA's time zone from the integration's sync. The `TZ` environment variable is the fallback before the first sync. A mismatch between the two shows a warning in the panel.
 
 ## 5. Data model
 
@@ -224,9 +224,9 @@ Served by the integration at `/menu_planner/menu-planner-cards.js?v=<version>`. 
 
 | Card | Element | Content | Actions |
 |---|---|---|---|
-| Today's dinner | `menu-planner-today-card` | Dinner name, items with type icons, kcal or "unknown", balance chip, empty-day state | Log as eaten; Swap (three suggestions) |
+| Today's dinner | `menu-planner-today-card` | Dinner title (item names joined with " · "), items with type icons, kcal or "unknown", balance chip, empty-day state | Log as eaten; Swap (three suggestions) |
 | Stock check | `menu-planner-stock-card` | Distinct items in the window, unanswered first, yes/no buttons, "replaces N dinners" on "no" | Answer yes or no |
-| Menu window | `menu-planner-week-card` | One row per day in the window (default 14 days): date, dinner, status badge | Tap a row for its components |
+| Menu window | `menu-planner-window-card` | One row per day in the window (default 14 days): date, dinner, status badge | Tap a row for its components |
 
 Visual editors: each card implements `getConfigForm()` with options for title, number of rows, show kcal, show balance, show stock impact, and unanswered only. Each card sets `preview: true` for the card picker.
 
@@ -264,7 +264,7 @@ Packaging:
 - s6 scripts start with `#!/command/with-contenv bashio`.
 - `hacs.json`: name, render_readme, and the minimum HA version (latest release at build time).
 - Versioning: add-on and integration versions move together, tagged `vX.Y.Z`.
-- License: MIT **(proposal, to confirm)**.
+- License: MIT (decided).
 
 ## 13. Testing and CI
 
@@ -305,7 +305,7 @@ Parallel build (after Phase 1, with `docs/API.md` frozen). Agents use claude-hai
 
 Rules: each agent edits only the files it owns. API changes go through `docs/API.md` and agent A. Only the coordinator edits `docs/WORKFILE.md`.
 
-## 15. Assumptions (confirm in review)
+## 15. Assumptions (accepted by the user)
 
 1. Unanswered stock means in stock.
 2. Stock and repeat gap apply per item. Each item is one ingredient (no ingredient lists in v1).
@@ -334,10 +334,11 @@ Rules: each agent edits only the files it owns. API changes go through `docs/API
 
 ## 17. Open items for the user
 
-- License (MIT proposed).
-- Brand icon (user-provided or generated).
-- USDA API key (optional; without it the USDA step is skipped).
-- Confirm the assumptions in section 15.
+- License: decided, MIT.
+- Brand icon: decided, a generated placeholder in Phase 1 (`brand/icon.png`); the user may replace it later.
+- USDA API key: skipped for now (optional; without it the USDA step is skipped).
+- Assumptions in section 15: accepted by the user.
+- Time zone source, dinner title, and card element name: decided (section 4.5, section 10).
 
 ## Appendix A: Starter content (proposal)
 

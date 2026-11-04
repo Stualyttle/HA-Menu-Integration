@@ -10,9 +10,9 @@ Last updated: 2026-11-04
 
 ## Status
 
-- **Phase:** 0, planning
-- **Now:** review of the plan and mockups with you
-- **Next:** Phase 1 (scaffolding and API contract), after review
+- **Phase:** 0, planning (review done)
+- **Now:** Phase 1 scaffolding is ready to start once you approve the plan
+- **Next:** Phase 1 (scaffolding and API contract)
 - **Blockers:** none. The Dutch healthy-plate source (voedingscentrum.nl) could not be fetched, so the balance defaults (PLAN 6.9) are unverified. Check them before release.
 
 ## Phase 0: Planning
@@ -25,9 +25,10 @@ Depends on: none
 - [x] Workfile created: `docs/WORKFILE.md`
 - [x] Folders created: `docs/`, `docs/mockups/`
 - [x] Mockups: add-on dashboard and Lovelace cards (`docs/mockups/`)
-- [ ] Review of plan and mockups with you
-- [ ] Assumptions confirmed (PLAN section 15)
-- [ ] Open items answered (PLAN section 17): license, brand icon, optional USDA key
+- [x] Review of plan and mockups with you
+- [x] Assumptions confirmed (PLAN section 15): accepted
+- [x] Open items answered (PLAN section 17): license MIT; brand icon placeholder in Phase 1; USDA key skipped for now
+- [x] Decisions: frontend Lit + Material Web; time zone from integration sync with `TZ` fallback; Today's card shows item names joined with " · "; window card is `menu-planner-window-card`; Home Assistant with Supervisor available for Phase 1 checks
 
 ## Phase 1: Scaffolding and API contract
 
@@ -142,4 +143,4 @@ Depends on: 9. Owner: G.
 | 2026-11-04 | `docs/PLAN.md` written. `docs/` and `docs/mockups/` created. |
 | 2026-11-04 | `docs/WORKFILE.md` created. Mockup sub-agent started. |
 | 2026-11-04 | Discovery facts recorded in PLAN 4.3 (no `hassio_api`; repeat discovery updates in place). Phase 3 and 8 dependencies aligned with `todo_deps`. |
-| 2026-11-04 | First mockup sub-agent was lost before writing files. Relaunched; `docs/mockups/addon-dashboard.html` and `docs/mockups/lovelace-cards.html` written and checked (no external URLs or resources). Known gaps: desktop card layout wraps to two rows; the week card shows 6 of 14 days; the dark theme is unchecked. |
+| 2026-11-04 | Phase 0 review done. Decisions recorded: MIT license; Lit + Material Web; time zone from the integration sync with `TZ` fallback; dinner title = item names joined with " · "; window card = `menu-planner-window-card`; brand icon placeholder; USDA key skipped for now; 12 assumptions accepted. Phase 1 checks need a Supervisor instance (available). | before writing files. Relaunched; `docs/mockups/addon-dashboard.html` and `docs/mockups/lovelace-cards.html` written and checked (no external URLs or resources). Known gaps: desktop card layout wraps to two rows; the week card shows 6 of 14 days; the dark theme is unchecked. |
