@@ -1,0 +1,29 @@
+{
+  "totalHits": 21,
+  "foods": [
+    {
+      "fdcId": 747447,
+      "description": "Broccoli, raw",
+      "dataType": "Foundation",
+      "foodNutrients": [
+        {"nutrientId": 1005, "nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": 6.27},
+        {"nutrientId": 1008, "nutrientName": "Energy", "unitName": "KCAL", "value": 31.0},
+        {"nutrientId": 1004, "nutrientName": "Total lipid (fat)", "unitName": "G", "value": 0.34},
+        {"nutrientId": 1003, "nutrientName": "Protein", "unitName": "G", "value": 2.57},
+        {"nutrientId": 1079, "nutrientName": "Fiber, total dietary", "unitName": "G", "value": 2.4}
+      ]
+    },
+    {
+      "fdcId": 170379,
+      "description": "Broccoli, raw",
+      "dataType": "SR Legacy",
+      "foodNutrients": [
+        {"nutrientId": 1005, "nutrientName": "Carbohydrate, by difference", "unitName": "G", "value": 6.64},
+        {"nutrientId": 1008, "nutrientName": "Energy", "unitName": "KCAL", "value": 34.0},
+        {"nutrientId": 1004, "nutrientName": "Total lipid (fat)", "unitName": "G", "value": 0.37},
+        {"nutrientId": 1003, "nutrientName": "Protein", "unitName": "G", "value": 2.82},
+        {"nutrientId": 1079, "nutrientName": "Fiber, total dietary", "unitName": "G", "value": 2.6}
+      ]
+    }
+  ]
+}

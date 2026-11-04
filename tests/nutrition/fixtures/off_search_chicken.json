@@ -1,0 +1,40 @@
+{
+  "count": 3,
+  "page": 1,
+  "page_count": 1,
+  "page_size": 5,
+  "skip": 0,
+  "products": [
+    {
+      "code": "4006381333931",
+      "product_name": "Chicken breast fillet",
+      "brands": "Example Farm",
+      "nutriments": {
+        "energy-kcal_100g": 110,
+        "energy-kj_100g": 460,
+        "proteins_100g": 23.1,
+        "carbohydrates_100g": 0.4,
+        "fat_100g": 1.9,
+        "fiber_100g": 0
+      }
+    },
+    {
+      "code": "2000000000002",
+      "product_name": "Chicken soup",
+      "brands": "Soup Co",
+      "nutriments": {
+        "energy-kj_100g": 184,
+        "proteins_100g": 3.0,
+        "carbohydrates_100g": 6.5,
+        "fat_100g": 1.1
+      }
+    },
+    {
+      "code": "2000000000003",
+      "product_name": "",
+      "nutriments": {
+        "energy-kcal_100g": 100
+      }
+    }
+  ]
+}

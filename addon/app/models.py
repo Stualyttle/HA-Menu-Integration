@@ -107,10 +107,14 @@ class Rule:
 
 @dataclass(slots=True)
 class Dinner:
+    """A set of items. Each item's type comes from `Item.type`.
+
+    `item_ids` is sorted and duplicate-free. Per-type counts are checked against the
+    dinner template by the domain rules, not here.
+    """
+
     id: int
-    protein_id: int
-    vegetable_id: int
-    carb_id: int
+    item_ids: tuple[int, ...]
 
 
 @dataclass(slots=True)

@@ -20,7 +20,7 @@ A Home Assistant integration (HACS) plus an add-on that:
 
 In v1:
 
-- Dinners only: one protein, one vegetable, one carb (the template is editable).
+- Dinners only: a dinner is a set of items. The template gives per-type counts from 0 to 2 (protein, vegetable, carb) and is editable. A dinner is valid when its per-type counts equal the template, and it cannot be empty.
 - Items with categories, portions, nutrition (verified or unverified), and stock tracking.
 - Hard blacklist; soft whitelist; soft category minimums; repeat gap; plate balance.
 - English and Dutch UI (follows HA language, English fallback).
@@ -36,7 +36,7 @@ Out of scope (v1): breakfast and lunch, allergies and diets, stock quantities, i
 | Integration | The HA component (`custom_components/menu_planner`): card data, sensors, services, notifications. |
 | Item | A food with one type: protein, vegetable, or carb. Stock is tracked per item, which acts as one ingredient (assumed). |
 | Category | A label on items (for example fish, Asian). An item can have several. |
-| Dinner | One item per slot (protein, vegetable, carb). Its categories are the union of its items' categories. |
+| Dinner | A set of items (no duplicate sets). The template gives the count per type (protein, vegetable, carb; 0 to 2 each), and a dinner is valid when its per-type counts equal the template. Its categories are the union of its items' categories. |
 | Window | The days shown and planned: today plus N-1 days. N defaults to 14, range 7 to 60. |
 | Hard rule | Never violated. If no dinner fits, the day is left empty. |
 | Soft rule | Scored. Violated only when nothing better fits, with a warning. |
@@ -96,7 +96,8 @@ SQLite, schema versioned with `PRAGMA user_version`.
 | `category_minimums` | category_id, min_per_7_days |
 | `rules` | id, kind (blacklist / whitelist), scope (combination / item), category_ids (set), item_id (nullable), enabled |
 | `template_slots` | slot_type (protein / vegetable / carb), count (0 to 2) |
-| `dinners` | id, protein_item_id, vegetable_item_id, carb_item_id, unique over the three ids |
+| `dinners` | id, items_key (sorted item ids, comma-joined, unique) |
+| `dinner_items` | dinner_id, item_id (PK together; cascades on delete of either side) |
 | `menu_days` | date (PK), dinner_id (nullable), status (planned / pinned / eaten / empty), replaced_reason (nullable), updated_at |
 | `stock` | item_id (PK), in_stock (bool; NULL = unanswered), updated_at |
 | `shopping_items` | item_id, added_at, removed_at |

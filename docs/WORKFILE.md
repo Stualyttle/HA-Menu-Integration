@@ -6,13 +6,13 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-04 (Phase 1)
+Last updated: 2026-11-04 (Phases 2 to 6 started)
 
 ## Status
 
-- **Phase:** 1, scaffolding and API contract (in progress)
-- **Now:** Live Supervisor checks (discovery, internal port, lifecycle, card registration) need access to a Home Assistant instance
-- **Next:** Phases 2 to 6 can start after the live checks, or in parallel with them
+- **Phase:** 2 to 6 in progress (parallel sub-agents on claude-haiku-5.5). Phase 1 code is done; its live checks are deferred.
+- **Now:** Agents running: A (Phase 2 data), B (Phase 3 engine), C (Phases 4 and 5 nutrition and io), E (Phase 6 panel). Only the coordinator edits this file.
+- **Next:** Review each batch, run lint and tests, commit. Phase 7 (integration) and Phase 8 (cards) follow. Live Supervisor checks stay pending until the user provides HA access.
 - **Blockers:** none. The Dutch healthy-plate source (voedingscentrum.nl) could not be fetched, so the balance defaults (PLAN 6.9) are unverified. Check them before release.
 
 ## Phase 0: Planning
@@ -145,4 +145,6 @@ Depends on: 9. Owner: G.
 | 2026-11-04 | `docs/WORKFILE.md` created. Mockup sub-agent started. |
 | 2026-11-04 | Discovery facts recorded in PLAN 4.3 (no `hassio_api`; repeat discovery updates in place). Phase 3 and 8 dependencies aligned with `todo_deps`. |
 | 2026-11-04 | Phase 1 code written: packaging, add-on skeleton (ingress, internal token listener, discovery), integration config flow, `docs/API.md`. Fixed `HassioServiceInfo` import (now `homeassistant.helpers.service_info.hassio`). Lint and 9 add-on tests pass. Live Supervisor checks pending (need HA access). |
-| 2026-11-04 | Phase 0 review done. Decisions recorded: MIT license; Lit + Material Web; time zone from the integration sync with `TZ` fallback; dinner title = item names joined with " · "; window card = `menu-planner-window-card`; brand icon placeholder; USDA key skipped for now; 12 assumptions accepted. Phase 1 checks need a Supervisor instance (available). | before writing files. Relaunched; `docs/mockups/addon-dashboard.html` and `docs/mockups/lovelace-cards.html` written and checked (no external URLs or resources). Known gaps: desktop card layout wraps to two rows; the week card shows 6 of 14 days; the dark theme is unchecked. |
+| 2026-11-04 | Phase 0 review done. Decisions recorded: MIT license; Lit + Material Web; time zone from the integration sync with `TZ` fallback; dinner title = item names joined with " · "; window card = `menu-planner-window-card`; brand icon placeholder; USDA key skipped for now; 12 assumptions accepted. Phase 1 checks need a Supervisor instance (available). |
+| 2026-11-04 | Mockup sub-agent relaunched; `docs/mockups/addon-dashboard.html` and `docs/mockups/lovelace-cards.html` written and checked (no external URLs or resources). Known gaps: desktop card layout wraps to two rows; the week card shows 6 of 14 days; the dark theme is unchecked. |
+| 2026-11-04 | User chose to skip the four live Supervisor checks for now. Phases 2 to 6 launched as parallel claude-haiku-5.5 sub-agents (A: db and api, B: domain, C: nutrition and io, E: panel). |

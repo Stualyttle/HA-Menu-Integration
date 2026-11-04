@@ -1,0 +1,27 @@
+/*
+ * Maps Home Assistant theme variables onto Material 3 system tokens, so
+ * Material Web components follow the user's HA theme (light or dark).
+ */
+:root {
+  --md-sys-color-primary: var(--primary-color, #03a9f4);
+  --md-sys-color-on-primary: var(--text-primary-color, #ffffff);
+  --md-sys-color-primary-container: var(--secondary-background-color, #e3f2fd);
+  --md-sys-color-on-primary-container: var(--primary-text-color, #1c1c1c);
+  --md-sys-color-secondary: var(--primary-color, #03a9f4);
+  --md-sys-color-secondary-container: var(--secondary-background-color, #e3f2fd);
+  --md-sys-color-on-secondary-container: var(--primary-text-color, #1c1c1c);
+  --md-sys-color-surface: var(--card-background-color, #ffffff);
+  --md-sys-color-surface-container: var(--card-background-color, #ffffff);
+  --md-sys-color-surface-container-high: var(--secondary-background-color, #f5f5f5);
+  --md-sys-color-surface-container-highest: var(--secondary-background-color, #f5f5f5);
+  --md-sys-color-on-surface: var(--primary-text-color, #212121);
+  --md-sys-color-on-surface-variant: var(--secondary-text-color, #727272);
+  --md-sys-color-outline: var(--divider-color, #e0e0e0);
+  --md-sys-color-outline-variant: var(--divider-color, #e0e0e0);
+  --md-sys-color-error: var(--error-color, #db4437);
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: var(--error-color, #db4437);
+  --md-sys-color-on-error-container: #ffffff;
+  --md-sys-typescale-body-medium-font: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
+  --md-sys-typescale-label-large-font: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
+}
