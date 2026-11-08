@@ -28,6 +28,7 @@
 
   "error.generic": "Something went wrong. Try again.",
   "error.network_error": "Cannot reach the add-on. Check your connection.",
+  "error.not_implemented": "This is not available yet.",
   "error.status.400": "Some values are not valid.",
   "error.status.401": "The add-on rejected the request.",
   "error.status.404": "That item no longer exists.",

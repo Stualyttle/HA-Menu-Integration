@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import UTC, date, datetime
 from typing import Any
 
+from app.domain.errors import PlannerConfigError
 from app.models import (
     Category,
     DayStatus,
@@ -330,6 +331,28 @@ class SqliteMenuRepository:
             )
         return Dinner(id=dinner_id, item_ids=ids)
 
+    async def ensure_dinners(self, dinner_item_sets: Sequence[Sequence[int]]) -> list[int]:
+        """Return a dinner id for each item set, creating the missing dinners.
+
+        Each set is sorted and deduplicated before lookup, so ``[3, 1]`` and ``[1, 3, 3]``
+        map to the same dinner. Ids are returned in input order. Calling this again with
+        the same sets creates nothing new (idempotent). All inserts share one transaction.
+        """
+        keys = [",".join(str(i) for i in sorted(set(s))) for s in dinner_item_sets]
+        ids_by_key: dict[str, int] = {}
+        with self._db.transaction() as conn:
+            for key in dict.fromkeys(keys):
+                conn.execute("INSERT OR IGNORE INTO dinners (items_key) VALUES (?)", (key,))
+                row = conn.execute("SELECT id FROM dinners WHERE items_key = ?", (key,)).fetchone()
+                dinner_id = int(row["id"])
+                ids_by_key[key] = dinner_id
+                if key:
+                    conn.executemany(
+                        "INSERT OR IGNORE INTO dinner_items (dinner_id, item_id) VALUES (?, ?)",
+                        [(dinner_id, int(item_id)) for item_id in key.split(",")],
+                    )
+        return [ids_by_key[key] for key in keys]
+
     def _load_dinner(self, dinner_id: int) -> Dinner:
         rows = self._db.query_all(
             "SELECT item_id FROM dinner_items WHERE dinner_id = ? ORDER BY item_id",
@@ -514,7 +537,7 @@ class TemplateStore:
 
     def set(self, counts: dict[str, int]) -> None:
         if not any(count > 0 for count in counts.values()):
-            raise ValueError("template must have at least one item per dinner")
+            raise PlannerConfigError("template must have at least one item per dinner")
         with self._db.transaction() as conn:
             for slot_type, count in counts.items():
                 conn.execute(

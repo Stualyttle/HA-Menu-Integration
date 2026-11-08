@@ -10,6 +10,7 @@ import { ApiError } from './client.js';
 export function errorMessage(err, t) {
   if (!(err instanceof ApiError)) return t('error.generic');
   if (err.code === 'network_error') return t('error.network_error');
+  if (err.code === 'not_implemented') return t('error.not_implemented');
   if (err.status > 0) {
     const key = `error.status.${err.status}`;
     const text = t(key);

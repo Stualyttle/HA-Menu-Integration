@@ -1,0 +1,83 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Menu Planner is al ingesteld.",
+      "no_discovery": "Geen Menu Planner-add-on gevonden. Installeer en start de Menu Planner-add-on en probeer het opnieuw."
+    },
+    "error": {
+      "cannot_connect": "Verbinding met de Menu Planner-add-on mislukt. Controleer host en poort.",
+      "invalid_auth": "Ongeldige token. Controleer de token in de add-on."
+    },
+    "step": {
+      "hassio_confirm": {
+        "title": "Menu Planner-add-on gevonden",
+        "description": "Wil je {name} instellen?"
+      },
+      "user": {
+        "title": "Menu Planner verbinden",
+        "description": "Vul het adres en de token van de Menu Planner-add-on in.",
+        "data": {
+          "host": "Host",
+          "port": "Poort",
+          "token": "Token"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "today_dinner": {
+        "name": "Avondeten vandaag"
+      },
+      "tomorrow_dinner": {
+        "name": "Avondeten morgen"
+      },
+      "warnings": {
+        "name": "Waarschuwingen"
+      },
+      "out_of_stock": {
+        "name": "Niet op voorraad"
+      }
+    }
+  },
+  "services": {
+    "log_eaten": {
+      "name": "Avondeten gegeten registreren",
+      "description": "Markeer het geplande avondeten voor een dag als gegeten.",
+      "fields": {
+        "date": {
+          "name": "Datum",
+          "description": "Dag die als gegeten wordt gemarkeerd. Standaard vandaag."
+        }
+      }
+    },
+    "set_stock": {
+      "name": "Voorraad instellen",
+      "description": "Markeer een bijgehouden ingrediënt als op voorraad, niet op voorraad of onbeantwoord.",
+      "fields": {
+        "item": {
+          "name": "Item",
+          "description": "ID van het voorraaditem in de add-on."
+        },
+        "in_stock": {
+          "name": "Op voorraad",
+          "description": "true = op voorraad, false = niet op voorraad, leeg = onbeantwoord."
+        }
+      }
+    },
+    "swap_today": {
+      "name": "Avondeten wisselen",
+      "description": "Vervang het geplande avondeten voor een dag door een ander gerecht.",
+      "fields": {
+        "dinner_id": {
+          "name": "Gerecht-ID",
+          "description": "ID van het gerecht dat op het menu komt."
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Dag die wordt gewijzigd. Standaard vandaag."
+        }
+      }
+    }
+  }
+}

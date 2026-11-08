@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 
+from app.domain.candidates import generate_candidates
 from app.domain.config import MINIMUM_SPAN_DAYS, PlanContext
 from app.domain.engine import (
     PlanResult,
@@ -15,6 +16,7 @@ from app.domain.engine import (
     roll_forward,
     suggest_swaps,
     window_bounds,
+    with_stock,
 )
 from app.domain.feasibility import RuleCheck, check_rules
 from app.domain.snapshot import PlanSnapshot
@@ -53,12 +55,20 @@ class MenuPlanner:
     nutrition: NutritionRepository
     warnings: WarningRepository
 
-    async def load(self, ctx: PlanContext) -> PlanSnapshot:
+    async def load(
+        self, ctx: PlanContext, proposed_rules: list[Rule] | None = None
+    ) -> PlanSnapshot:
+        """Snapshot of household data plus generated candidate dinners.
+
+        `proposed_rules` replaces the stored rules, so candidates respect a rule set being checked.
+        """
         start, end = window_bounds(ctx)
         margin = max(ctx.settings.repeat_gap_days, MINIMUM_SPAN_DAYS)
         items = await self.items.list_items()
         categories = await self.categories.list_categories()
-        rules = await self.rules.list_rules()
+        rules = (
+            list(proposed_rules) if proposed_rules is not None else await self.rules.list_rules()
+        )
         dinners = await self.menu.list_dinners()
         days = await self.menu.get_days(
             start - timedelta(days=margin), end + timedelta(days=margin)
@@ -68,7 +78,7 @@ class MenuPlanner:
             record = await self.nutrition.get_nutrition(item.id)
             if record is not None:
                 nutrition[item.id] = record
-        return PlanSnapshot(
+        snapshot = PlanSnapshot(
             items={item.id: item for item in items},
             categories={category.id: category for category in categories},
             rules=rules,
@@ -76,6 +86,21 @@ class MenuPlanner:
             nutrition=nutrition,
             days={day.day: day for day in days},
         )
+        return await self._with_candidates(snapshot, ctx)
+
+    async def _with_candidates(self, snapshot: PlanSnapshot, ctx: PlanContext) -> PlanSnapshot:
+        """Add generated item-sets as dinners, persisting only the ones not stored yet."""
+        generated = generate_candidates(snapshot, ctx, seed=f"candidates-{ctx.revision}")
+        known = {dinner.item_ids for dinner in snapshot.dinners.values()}
+        missing = [item_ids for item_ids in generated if item_ids not in known]
+        if not missing:
+            return snapshot
+        new_ids = await self.menu.ensure_dinners(missing)
+        added = {
+            dinner_id: Dinner(id=dinner_id, item_ids=item_ids)
+            for dinner_id, item_ids in zip(new_ids, missing, strict=True)
+        }
+        return replace(snapshot, dinners={**snapshot.dinners, **added})
 
     async def replan(
         self, ctx: PlanContext, now: datetime, reason: str | None = None
@@ -91,8 +116,9 @@ class MenuPlanner:
         self, ctx: PlanContext, item_id: int, out: bool, now: datetime
     ) -> PlanContext:
         """Apply a stock change and return the updated context the caller must keep."""
-        snapshot = await self.load(ctx)
-        new_ctx, result = apply_stock_change(snapshot, ctx, item_id, out)
+        new_ctx = with_stock(ctx, item_id, out)
+        snapshot = await self.load(new_ctx)
+        new_ctx, result = apply_stock_change(snapshot, new_ctx, item_id, out)
         await self._commit(new_ctx, snapshot, result, now)
         return new_ctx
 
@@ -106,9 +132,7 @@ class MenuPlanner:
 
     async def check_rules(self, ctx: PlanContext, proposed: list[Rule] | None = None) -> RuleCheck:
         """Feasibility of `proposed` rules (or the stored set when None). Run before saving."""
-        snapshot = await self.load(ctx)
-        if proposed is not None:
-            snapshot = replace(snapshot, rules=list(proposed))
+        snapshot = await self.load(ctx, proposed)
         return check_rules(snapshot, ctx)
 
     async def _commit(

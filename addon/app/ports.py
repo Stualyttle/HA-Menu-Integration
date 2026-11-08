@@ -5,7 +5,7 @@ Phases 2 to 5 implement these. Keep the signatures stable; API changes go throug
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import date
 from typing import Protocol
 
@@ -52,6 +52,13 @@ class MenuRepository(Protocol):
     async def save_days(self, days: Iterable[MenuDay]) -> None: ...
 
     async def list_dinners(self) -> list[Dinner]: ...
+
+    async def ensure_dinners(self, dinner_item_sets: Sequence[Sequence[int]]) -> list[int]:
+        """Create dinners for item-id sets that do not exist yet (idempotent).
+
+        Returns one dinner id per input set, in the same order.
+        """
+        ...
 
 
 class NutritionRepository(Protocol):

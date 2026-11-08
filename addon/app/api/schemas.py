@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.models import (
     Category,
+    DayStatus,
     Item,
     ItemType,
     Nutrition,
@@ -210,6 +211,66 @@ class TemplateIn(BaseModel):
     protein: Annotated[int, Field(ge=0, le=2)]
     vegetable: Annotated[int, Field(ge=0, le=2)]
     carb: Annotated[int, Field(ge=0, le=2)]
+
+
+class DinnerItemOut(BaseModel):
+    id: int
+    name: str
+    type: ItemType
+
+
+class DinnerOut(BaseModel):
+    id: int
+    items: list[DinnerItemOut]
+
+
+class MenuDayOut(BaseModel):
+    """One planned day. `date` is an ISO local date (docs/API.md "Menu")."""
+
+    date: str
+    status: DayStatus
+    dinner: DinnerOut | None
+    kcal: float | None
+    balance: Literal["ok", "off_target", "unknown"]
+    replaced_reason: str | None
+    warnings: list[str]
+
+
+class MenuUpdateIn(BaseModel):
+    """Exactly one of: `pinned` (true pins the current dinner, false unpins)
+    or `dinner_id` (swap and pin)."""
+
+    pinned: bool | None = None
+    dinner_id: int | None = None
+
+
+class SwapIn(BaseModel):
+    dinner_id: int
+
+
+class SyncIn(BaseModel):
+    language: Annotated[str, Field(min_length=1, max_length=35)]
+    time_zone: Annotated[str, Field(min_length=1, max_length=64)]
+
+
+class SyncOut(BaseModel):
+    language: str
+    time_zone: str
+    timezone_mismatch: bool
+
+
+class RuleCheckIn(BaseModel):
+    """A proposed rule. `rule_id` replaces that stored rule; omit it to check an added rule."""
+
+    rule: RuleIn
+    rule_id: int | None = None
+
+
+class RuleCheckOut(BaseModel):
+    feasible: bool
+    exhausted: bool
+    affected_days: list[str]
+    locked_conflicts: list[str]
 
 
 class WarningSubjectOut(BaseModel):

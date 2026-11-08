@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from app.api.deps import StoresDep, planning_window
 from app.api.lookups import require_item
+from app.api.planning import build_context, build_planner, now_utc
 from app.api.schemas import (
     StockAnswerIn,
     StockChangeOut,
@@ -14,6 +15,8 @@ from app.api.schemas import (
     StockPreviewOut,
 )
 from app.db import Stores
+from app.domain.engine import STOCK_REASON
+from app.domain.snapshot import PlanSnapshot
 from app.models import Item
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
@@ -43,16 +46,37 @@ async def list_stock(stores: StoresDep, unanswered_first: bool = True) -> list[S
     return rows
 
 
+def _stock_diff(before: PlanSnapshot, after: PlanSnapshot) -> tuple[list[str], list[str]]:
+    """Days newly replaced by stock and days whose stock replacement was undone."""
+    replaced: list[str] = []
+    restored: list[str] = []
+    for day in sorted(set(before.days) | set(after.days)):
+        old = before.days.get(day)
+        new = after.days.get(day)
+        old_reason = old.replaced_reason if old else None
+        new_reason = new.replaced_reason if new else None
+        if new_reason == STOCK_REASON and new_reason != old_reason:
+            replaced.append(day.isoformat())
+        elif old_reason == STOCK_REASON and new_reason != STOCK_REASON:
+            restored.append(day.isoformat())
+    return replaced, restored
+
+
 @router.put("/{item_id}", response_model=StockChangeOut)
 async def set_stock(item_id: int, body: StockAnswerIn, stores: StoresDep) -> StockChangeOut:
     await require_item(stores, item_id)
+    planner = build_planner(stores)
+    ctx = build_context(stores)
+    before = await planner.load(ctx)
     stores.stock.set_answer(item_id, body.in_stock)
-    # Replaced/restored days and shopping changes are applied by the stock service (agent B).
+    new_ctx = await planner.set_stock(ctx, item_id, body.in_stock is False, now_utc())
+    after = await planner.load(new_ctx)
+    replaced, restored = _stock_diff(before, after)
     return StockChangeOut(
         item_id=item_id,
         in_stock=body.in_stock,
-        replaced_dates=[],
-        restored_dates=[],
+        replaced_dates=replaced,
+        restored_dates=restored,
         shopping=[],
     )
 

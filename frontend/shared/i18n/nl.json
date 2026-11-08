@@ -28,6 +28,7 @@
 
   "error.generic": "Er ging iets mis. Probeer het opnieuw.",
   "error.network_error": "De add-on is niet bereikbaar. Controleer je verbinding.",
+  "error.not_implemented": "Dit is nog niet beschikbaar.",
   "error.status.400": "Sommige waarden zijn niet geldig.",
   "error.status.401": "De add-on heeft het verzoek geweigerd.",
   "error.status.404": "Dit item bestaat niet meer.",

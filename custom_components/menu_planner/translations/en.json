@@ -2,13 +2,81 @@
   "config": {
     "abort": {
       "already_configured": "Menu Planner is already configured.",
-      "no_discovery": "No Menu Planner add-on was found. Install and start the Menu Planner add-on, then try again.",
-      "unknown_service": "This discovery message is not for Menu Planner."
+      "no_discovery": "No Menu Planner add-on was found. Install and start the Menu Planner add-on, then try again."
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the Menu Planner add-on. Check the host and port.",
+      "invalid_auth": "Invalid token. Check the token in the add-on."
     },
     "step": {
       "hassio_confirm": {
         "title": "Menu Planner add-on found",
         "description": "Do you want to set up {name}?"
+      },
+      "user": {
+        "title": "Connect Menu Planner",
+        "description": "Enter the address and token of the Menu Planner add-on.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "token": "Token"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "today_dinner": {
+        "name": "Dinner today"
+      },
+      "tomorrow_dinner": {
+        "name": "Dinner tomorrow"
+      },
+      "warnings": {
+        "name": "Warnings"
+      },
+      "out_of_stock": {
+        "name": "Out of stock"
+      }
+    }
+  },
+  "services": {
+    "log_eaten": {
+      "name": "Log dinner eaten",
+      "description": "Mark the planned dinner for a day as eaten.",
+      "fields": {
+        "date": {
+          "name": "Date",
+          "description": "Day to mark as eaten. Defaults to today."
+        }
+      }
+    },
+    "set_stock": {
+      "name": "Set stock",
+      "description": "Mark a tracked ingredient as in stock, out of stock, or unanswered.",
+      "fields": {
+        "item": {
+          "name": "Item",
+          "description": "ID of the stock item in the add-on."
+        },
+        "in_stock": {
+          "name": "In stock",
+          "description": "true = in stock, false = out of stock, empty = unanswered."
+        }
+      }
+    },
+    "swap_today": {
+      "name": "Swap dinner",
+      "description": "Replace the planned dinner for a day with another dinner.",
+      "fields": {
+        "dinner_id": {
+          "name": "Dinner ID",
+          "description": "ID of the dinner to put on the menu."
+        },
+        "date": {
+          "name": "Date",
+          "description": "Day to change. Defaults to today."
+        }
       }
     }
   }

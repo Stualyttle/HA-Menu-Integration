@@ -286,6 +286,16 @@ def replan_all(snapshot: PlanSnapshot, ctx: PlanContext, reason: str | None = No
     return plan(snapshot, ctx, fillable_days(snapshot, ctx), reason)
 
 
+def with_stock(ctx: PlanContext, item_id: int, out: bool) -> PlanContext:
+    """Return `ctx` with the item's stock flag set (out=True means "no")."""
+    stock = set(ctx.out_of_stock)
+    if out:
+        stock.add(item_id)
+    else:
+        stock.discard(item_id)
+    return replace(ctx, out_of_stock=frozenset(stock))
+
+
 def apply_stock_change(
     snapshot: PlanSnapshot, ctx: PlanContext, item_id: int, out: bool
 ) -> tuple[PlanContext, PlanResult]:
@@ -294,12 +304,7 @@ def apply_stock_change(
     "no" replaces fillable days whose dinner uses the item. "yes" re-plans only the days that
     an earlier "no" replaced, so the rest of the window is left alone.
     """
-    stock = set(ctx.out_of_stock)
-    if out:
-        stock.add(item_id)
-    else:
-        stock.discard(item_id)
-    new_ctx = replace(ctx, out_of_stock=frozenset(stock))
+    new_ctx = with_stock(ctx, item_id, out)
     fillable = fillable_days(snapshot, new_ctx)
     if out:
         targets = [

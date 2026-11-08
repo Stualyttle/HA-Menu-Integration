@@ -114,6 +114,17 @@ class FakeMenu:
     async def list_dinners(self) -> list[Dinner]:
         return [self._store.dinners[k] for k in sorted(self._store.dinners)]
 
+    async def ensure_dinners(self, dinner_item_sets: Iterable[Iterable[int]]) -> list[int]:
+        ids: list[int] = []
+        for item_ids in dinner_item_sets:
+            key = tuple(sorted(set(item_ids)))
+            existing = next((d.id for d in self._store.dinners.values() if d.item_ids == key), None)
+            if existing is None:
+                existing = self._store.next_dinner_id()
+                self._store.dinners[existing] = Dinner(id=existing, item_ids=key)
+            ids.append(existing)
+        return ids
+
 
 class FakeNutrition:
     def __init__(self, store: FakeStore) -> None:

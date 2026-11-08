@@ -4,6 +4,9 @@
  * Paths are relative ("api/...") so the panel works under any Ingress base path.
  * Errors from the server ({error: {code, message, details}}) and network failures
  * are normalised into ApiError so callers can branch on `code`.
+ * The 401 handler (addon/app/main.py) answers {detail: "..."} instead; both shapes
+ * are accepted. Routes marked "Planned" in docs/API.md are called but may 404 until
+ * they land; calls marked TODO(API) use request bodies the contract does not define yet.
  */
 
 export class ApiError extends Error {
@@ -34,6 +37,23 @@ function buildQuery(query) {
   return text ? `?${text}` : '';
 }
 
+/**
+ * Normalise an error response. Accepts the add-on envelope
+ * ({error: {code, message, details}}) and the 401 shape ({detail: string}).
+ */
+function toApiError(status, payload) {
+  if (payload && typeof payload === 'object') {
+    const error = payload.error;
+    if (error && typeof error === 'object') {
+      return new ApiError(status, error.code ?? `http_${status}`, error.message ?? '', error.details ?? {});
+    }
+    if (typeof payload.detail === 'string') {
+      return new ApiError(status, `http_${status}`, payload.detail);
+    }
+  }
+  return new ApiError(status, `http_${status}`, typeof payload === 'string' ? payload : '');
+}
+
 async function parseBody(response) {
   const text = await response.text();
   if (!text) return null;
@@ -42,6 +62,11 @@ async function parseBody(response) {
   } catch {
     return text;
   }
+}
+
+/** Client-side rejection for routes that docs/API.md does not define. No request is sent. */
+function notInContract(name) {
+  return Promise.reject(new ApiError(501, 'not_implemented', `${name} is not in docs/API.md`));
 }
 
 /**
@@ -67,11 +92,7 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
 
     const payload = await parseBody(response);
     if (!response.ok) {
-      const error = payload && typeof payload === 'object' ? payload.error : null;
-      if (error && typeof error === 'object') {
-        throw new ApiError(response.status, error.code ?? `http_${response.status}`, error.message ?? '', error.details ?? {});
-      }
-      throw new ApiError(response.status, `http_${response.status}`, typeof payload === 'string' ? payload : '');
+      throw toApiError(response.status, payload);
     }
     return payload;
   }
@@ -85,17 +106,24 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
   return {
     request,
     health: () => get('/health'),
+    // Planned (API.md). TODO(API): request body not defined in the contract.
     sync: (payload) => post('/sync', payload),
 
     menu: {
+      // Planned (API.md): GET /api/menu?from=&to= returns a bare array.
       list: (from, to) => get('/menu', { from, to }),
+      // Planned (API.md): GET /api/menu/today.
       today: () => get('/menu/today'),
+      // Planned (API.md): PUT /api/menu/{date}. TODO(API): body (pin, unpin, set dinner) not defined in the contract.
       update: (date, payload) => put(`/menu/${id(date)}`, payload),
+      // Planned (API.md): POST /api/menu/{date}/eaten.
       eaten: (date) => post(`/menu/${id(date)}/eaten`),
+      // Planned (API.md): GET /api/menu/{date}/swap.
       swapSuggestions: (date) => get(`/menu/${id(date)}/swap`),
+      // Planned (API.md): POST /api/menu/{date}/swap with {dinner_id}.
       swap: (date, dinnerId) => post(`/menu/${id(date)}/swap`, { dinner_id: dinnerId }),
-      // Not in docs/API.md yet; see the Phase 6 open questions.
-      replan: () => post('/menu/replan'),
+      // Not in docs/API.md. Stubbed: no network call. TODO(API): confirm whether the route exists.
+      replan: () => notInContract('menu.replan'),
     },
 
     items: {
@@ -104,7 +132,9 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
       create: (payload) => post('/items', payload),
       update: (itemId, payload) => put(`/items/${id(itemId)}`, payload),
       remove: (itemId) => del(`/items/${id(itemId)}`),
+      // Planned (API.md): POST /api/items/{id}/nutrition/lookup.
       lookupNutrition: (itemId) => post(`/items/${id(itemId)}/nutrition/lookup`),
+      // Planned (API.md): PUT /api/items/{id}/nutrition. TODO(API): body shape not defined in the contract.
       setNutrition: (itemId, payload) => put(`/items/${id(itemId)}/nutrition`, payload),
     },
 
@@ -121,6 +151,7 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
       create: (payload) => post('/rules', payload),
       update: (ruleId, payload) => put(`/rules/${id(ruleId)}`, payload),
       remove: (ruleId) => del(`/rules/${id(ruleId)}`),
+      // Planned (API.md): POST /api/rules/check. TODO(API): body not defined in the contract.
       check: (payload) => post('/rules/check', payload),
     },
 
@@ -133,8 +164,8 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
     settings: {
       get: () => get('/settings'),
       update: (payload) => put('/settings', payload),
-      // Not in docs/API.md yet; see the Phase 6 open questions.
-      retryLookups: () => post('/settings/retry-lookups'),
+      // Not in docs/API.md. Stubbed: no network call. TODO(API): confirm whether the route exists.
+      retryLookups: () => notInContract('settings.retryLookups'),
     },
 
     template: {
@@ -142,8 +173,11 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
       update: (payload) => put('/template', payload),
     },
 
+    // Planned (API.md): GET /api/export. TODO(API): the response is a file download; it is parsed as JSON here.
     exportData: () => get('/export'),
+    // Planned (API.md): POST /api/import/preview. TODO(API): body not defined in the contract.
     importPreview: (payload) => post('/import/preview', payload),
+    // Planned (API.md): POST /api/import. TODO(API): body (include_settings, include_history) not fully defined in the contract.
     importData: (payload) => post('/import', payload),
 
     warnings: {

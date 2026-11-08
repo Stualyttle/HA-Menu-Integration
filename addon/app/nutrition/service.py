@@ -18,10 +18,12 @@ from app.models import (
     WarningSubject,
 )
 from app.nutrition.clients import (
+    MATCH_THRESHOLD,
     NutritionCandidate,
     NutritionClientError,
     NutritionSearchClient,
     best_match,
+    match_score,
 )
 from app.ports import ItemRepository, NutritionRepository, WarningRepository
 
@@ -122,6 +124,49 @@ class NutritionService:
             item_id=item_id,
             source=NutritionSource.MANUAL,
             status=NutritionStatus.OK,
+            kcal=_check_amount("kcal", kcal, required=True),
+            protein_g=_check_amount("protein_g", protein_g, required=True),
+            carbs_g=_check_amount("carbs_g", carbs_g, required=True),
+            fat_g=_check_amount("fat_g", fat_g, required=True),
+            fiber_g=_check_amount("fiber_g", fiber_g, required=False),
+            user_confirmed=True,
+            fetched_at=self._clock(),
+        )
+        await self._nutrition.save_nutrition(record)
+        await self._resolve_open_warning(item_id)
+        return record
+
+    async def confirm_candidate(
+        self,
+        item_id: int,
+        *,
+        source: NutritionSource,
+        external_id: str,
+        matched_name: str,
+        kcal: float,
+        protein_g: float,
+        carbs_g: float,
+        fat_g: float,
+        fiber_g: float | None = None,
+    ) -> Nutrition:
+        """Stores a candidate the user picked from a lookup, verified by the user.
+
+        Rejects manual sources, names that do not match the item well enough, and incomplete
+        macros, since only complete, user-confirmed data is verified.
+        """
+        item = await self._require_item(item_id)
+        if source is NutritionSource.MANUAL:
+            raise NutritionError("manual entries use the manual values, not a candidate")
+        if not external_id.strip():
+            raise NutritionError("external_id is required")
+        if match_score(item.name, matched_name) < MATCH_THRESHOLD:
+            raise NutritionError("the product name does not match the item closely enough")
+        record = Nutrition(
+            item_id=item_id,
+            source=source,
+            status=NutritionStatus.OK,
+            external_id=external_id,
+            matched_name=matched_name,
             kcal=_check_amount("kcal", kcal, required=True),
             protein_g=_check_amount("protein_g", protein_g, required=True),
             carbs_g=_check_amount("carbs_g", carbs_g, required=True),

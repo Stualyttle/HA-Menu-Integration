@@ -1,0 +1,48 @@
+log_eaten:
+  name: Log dinner eaten
+  description: Mark the planned dinner for a day as eaten.
+  fields:
+    date:
+      name: Date
+      description: Day to mark as eaten. Defaults to today.
+      required: false
+      selector:
+        date:
+
+set_stock:
+  name: Set stock
+  description: Mark a tracked ingredient as in stock, out of stock, or unanswered.
+  fields:
+    item:
+      name: Item
+      description: ID of the stock item (track_stock item) in the add-on.
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    in_stock:
+      name: In stock
+      description: "true = in stock, false = out of stock, empty = unanswered."
+      required: false
+      selector:
+        boolean:
+
+swap_today:
+  name: Swap dinner
+  description: Replace the planned dinner for a day with another dinner.
+  fields:
+    dinner_id:
+      name: Dinner ID
+      description: ID of the dinner to put on the menu.
+      required: true
+      selector:
+        number:
+          min: 1
+          mode: box
+    date:
+      name: Date
+      description: Day to change. Defaults to today.
+      required: false
+      selector:
+        date:

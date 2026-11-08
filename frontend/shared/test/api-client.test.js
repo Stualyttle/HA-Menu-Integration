@@ -106,4 +106,25 @@ describe('createApiClient', () => {
     await createApiClient({ fetchImpl }).stock.list();
     expect(fetchImpl.mock.calls[0][0]).toBe('api/stock?unanswered_first=true');
   });
+
+  it('accepts the {detail} shape returned by the 401 handler', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(401, { detail: 'invalid or missing token' }));
+    const error = await createApiClient({ fetchImpl }).health().catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(401);
+    expect(error.code).toBe('http_401');
+    expect(error.message).toBe('invalid or missing token');
+  });
+
+  it('stubs routes missing from docs/API.md without sending a request', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(200, {}));
+    const client = createApiClient({ fetchImpl });
+    for (const call of [client.menu.replan(), client.settings.retryLookups()]) {
+      const error = await call.catch((e) => e);
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error.status).toBe(501);
+      expect(error.code).toBe('not_implemented');
+    }
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
 });
