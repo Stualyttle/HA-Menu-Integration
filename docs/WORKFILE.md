@@ -6,13 +6,13 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-04 (wave 1 integrated, verified, and documented; not yet committed)
+Last updated: 2026-11-04 (wave 1 committed as `a2d9ac5`; README, Copilot rules, agents, skills, and CI/build workflows added)
 
 ## Status
 
-- **Phase:** Wave 1 (Phases 3 to 7 core, 4 and 5 routes, 6 panel) integrated in the working tree, not committed. Phase 1 live checks are deferred.
-- **Now:** Coordinator is reconciling `docs/API.md` with wave 1 and deciding the 401 body format.
-- **Next:** Commit wave 1. Then align the panel's 13 `TODO(API)` calls with backend routes. Then Phase 8 (cards) and Phases 9 to 10.
+- **Phase:** Wave 1 committed (`a2d9ac5`). Phase 9 partly done: CI and multi-arch build workflows exist; docs and agent rules added. Phase 1 live checks are deferred.
+- **Now:** Committing README, Copilot rules, and build workflows. Open questions for the user: 401 body format, whether read paths persist dinners, and whether to align the panel's 13 `TODO(API)` calls.
+- **Next:** Align the panel's `TODO(API)` calls with backend routes. Then Phase 8 (cards) and Phases 9 to 10.
 - **Blockers:** Live Supervisor checks need HA access details. The balance defaults (PLAN 6.9) are unverified. Open design questions: whether read paths persist dinners, whether `check_rules` persists candidates, the 500-candidate cap, and that household size does not scale portions.
 
 Verification (wave 1): ruff check and format clean. Add-on pytest 332 passed. Integration pytest 33 passed. Panel Vitest 20 passed; build succeeded. 38 operations, no duplicate routes.
@@ -161,3 +161,7 @@ Depends on: 9. Owner: G.
 | 2026-11-04 | Workfile and `docs/API.md` reconciled with the code. Unbuilt routes (menu, sync, nutrition lookup and PUT, rules check, export, import) marked planned. Error codes corrected (400, not 422). |
 | 2026-11-04 | Wave 1 (5 parallel agents, claude-haiku-5.5): menu, sync, rules check, nutrition, import/export routes; candidate generation; integration; panel. `DATA_ROUTERS` updated. Verified: 332 add-on, 33 integration, 20 panel tests; ruff clean; no duplicate routes. Not yet committed. |
 | 2026-11-04 | `docs/API.md` reconciled with wave 1. Lookup is GET (was documented as POST). Routes and bodies updated. |
+| 2026-11-04 | Wave 1 committed as `a2d9ac5`. |
+| 2026-11-04 | Build: `addon/config.yaml` arch list now armv7, aarch64, amd64, with an `image:` template for GHCR. `addon/build.yaml` removed; `addon/Dockerfile` picks the base image from `BUILD_ARCH`. Added `.github/workflows/ci.yaml` and `build-addon.yaml`. Both pass actionlint. Not yet run on GitHub. |
+| 2026-11-04 | Copilot rules added: `.github/copilot-instructions.md`, four agents (addon, integration, panel, docs-keeper), and three skills (run-checks, workfile-update, addon-release). |
+| 2026-11-04 | `README.md` written (HACS and add-on install, architecture support, dev commands, workflows). Added `LICENSE` (MIT). |

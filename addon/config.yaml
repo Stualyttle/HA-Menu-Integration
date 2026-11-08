@@ -1,10 +1,12 @@
 name: Menu Planner
 version: "0.1.0"
 slug: menu_planner
+image: ghcr.io/stualyttle/{arch}-addon-menu-planner
 description: Plan healthy dinners, track stock and manage the menu
 arch:
-  - amd64
+  - armv7
   - aarch64
+  - amd64
 init: false
 startup: application
 boot: auto
