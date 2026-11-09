@@ -6,7 +6,7 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-09 (panel confirmation dialogs built and tested)
+Last updated: 2026-11-09 (Belgian starter catalog and standalone complete meals implemented)
 
 ## Status
 
@@ -14,6 +14,8 @@ Last updated: 2026-11-09 (panel confirmation dialogs built and tested)
 - **Now:** Phase 8 is implemented and verified locally. Continue GitHub workflow/image validation and remaining Phase 9–10 release work. Accepted decisions remain implemented: keep the documented 401 `detail` response; persist generated dinners only when planner writes select them; use real API routes and payloads throughout the panel.
 - **Next:** Run CI on GitHub, perform the remaining live Supervisor checks, and prepare the `v0.1.0` release.
 - **Blockers:** Live Supervisor checks need HA access details. The balance defaults (PLAN 6.9) are unverified. Remaining open questions: the 500-candidate cap and that household size does not scale portions.
+
+Current task: expanded the starter catalog through append-only database migration v2, and added standalone complete-meal support through API, planner, import/export, and panel UI. Python tests (350) and panel tests (24) pass; panel bundle builds and Ruff checks pass. Integration tests could not start in this environment because `voluptuous` is missing from the HA test environment.
 
 Verification (wave 2): ruff check and format clean. Add-on pytest 336 passed. Integration pytest 33 passed. Panel Vitest 20 passed; production build succeeded. actionlint clean. 39 API operations, no duplicates. Generated dinner read/write behavior and live API request shapes have regression tests.
 
@@ -178,4 +180,5 @@ Depends on: 9. Owner: G.
 | 2026-11-09 | Fixed the follow-up Hassfest failure by sorting manifest keys after `domain` and `name`. Local key-order and JSON checks pass; Hassfest could not be rerun because the Docker daemon is unavailable. |
 | 2026-11-09 | Mounted the built panel index and assets on the ingress app, leaving the internal listener API-only. Added route, asset, API-404, and internal-listener regression tests. |
 | 2026-11-09 | Replaced browser-native delete prompts with one localized Material confirmation dialog shared by item, category, and rule deletion. It is only requested by delete actions, not tab navigation. Rebuilt the panel bundle; 24 frontend tests pass. |
+| 2026-11-09 | Added Belgian/European starter-food catalog and append-only schema v2 migration. Added standalone complete meals through item API/DB, candidate generation and hard rules, import/export, menu output, and localized panel controls. Complete meals remain standalone, obey stock/blacklist rules, and report unknown component balance. Verified v1 upgrade preservation, catalog category references, 350 Python tests, 24 panel tests/build, and Ruff. Integration tests remain unverified here because the HA test environment lacks `voluptuous`. |
 | 2026-11-09 | Verified the public GitHub repository description and topics are now set after the HACS workflow reported them missing; the failed run may predate the metadata change. |

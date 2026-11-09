@@ -152,7 +152,7 @@ export class MpMenuView extends MpView {
     if (!day.dinner) return html`<span class="muted">${t('menu.noDinner')}</span>`;
     return html`<div class="dinner">
       ${(day.dinner.items ?? []).map(
-        (item) => html`<span class="chip-type">${item.name} · ${t(`type.${item.type}`)}</span>`,
+        (item) => html`<span class="chip-type">${item.name} · ${item.is_complete_meal ? t('items.completeMeal') : t(`type.${item.type}`)}</span>`,
       )}
     </div>`;
   }

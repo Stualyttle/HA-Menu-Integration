@@ -3,6 +3,11 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
+
+from app.domain.config import PlanContext, Template
+from app.domain.engine import STOCK_REASON, apply_stock_change, replan_all, roll_forward
+from app.domain.errors import PlannerConfigError
+from app.models import DayStatus, ItemType, MenuDay, WarningCode
 from tests.domain.fakes import (
     CHICKEN,
     TODAY,
@@ -14,11 +19,6 @@ from tests.domain.fakes import (
     window_dates,
     window_status,
 )
-
-from app.domain.config import PlanContext, Template
-from app.domain.engine import STOCK_REASON, apply_stock_change, replan_all, roll_forward
-from app.domain.errors import PlannerConfigError
-from app.models import DayStatus, ItemType, MenuDay, WarningCode
 
 
 def _window_ids(store, ctx: PlanContext) -> dict:

@@ -65,6 +65,23 @@ def test_item_type_must_be_known() -> None:
     assert "items[0].type: must be one of protein, vegetable, carb" in _errors(data)
 
 
+def test_complete_meal_flag_is_backward_compatible_and_validated() -> None:
+    old_item = parse_document(minimal_document(items=[{"name": "Old dish", "type": "carb"}])).items[
+        0
+    ]
+    assert old_item.is_complete_meal is False
+
+    meal = parse_document(
+        minimal_document(items=[{"name": "Lasagne", "type": "carb", "is_complete_meal": True}])
+    ).items[0]
+    assert meal.is_complete_meal is True
+
+    data = minimal_document(
+        items=[{"name": "Lasagne", "type": "protein", "is_complete_meal": True}]
+    )
+    assert "items[0].type: complete meals must use the carb item type" in _errors(data)
+
+
 def test_item_name_must_be_non_empty() -> None:
     data = minimal_document(items=[{"name": "   ", "type": "carb"}])
     assert "items[0].name: must be a non-empty string" in _errors(data)

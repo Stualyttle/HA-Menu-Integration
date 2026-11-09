@@ -59,6 +59,16 @@ async def test_item_names_match_case_insensitively_and_are_skipped(store: Store)
     assert [(item.name, item.type) for item in items] == [("Kale", ItemType.VEGETABLE)]
 
 
+async def test_import_persists_complete_meal_flag(store: Store) -> None:
+    await store.importer().apply(
+        minimal_document(items=[{"name": "Lasagne", "type": "carb", "is_complete_meal": True}])
+    )
+
+    item = (await store.items.list_items())[0]
+    assert item.name == "Lasagne"
+    assert item.is_complete_meal is True
+
+
 async def test_existing_category_minimum_is_not_overwritten(store: Store) -> None:
     await store.add_category("Greens", minimum=5)
     data = minimal_document(categories=[{"name": "greens", "min_per_7_days": 3}])

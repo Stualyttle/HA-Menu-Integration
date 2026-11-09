@@ -3,6 +3,11 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
+
+from app.domain.engine import apply_swap, suggest_swaps
+from app.domain.errors import DayNotEditableError, SwapRejectedError
+from app.domain.rules import RuleIndex, hard_violation
+from app.models import DayStatus, MenuDay
 from tests.domain.fakes import (
     BEEF,
     CHICKEN,
@@ -15,11 +20,6 @@ from tests.domain.fakes import (
     standard_household,
     window_dates,
 )
-
-from app.domain.engine import apply_swap, suggest_swaps
-from app.domain.errors import DayNotEditableError, SwapRejectedError
-from app.domain.rules import RuleIndex, hard_violation
-from app.models import DayStatus, MenuDay
 
 
 def test_suggestions_are_at_most_three_and_all_satisfy_hard_rules():

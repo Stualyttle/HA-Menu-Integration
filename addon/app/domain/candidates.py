@@ -31,6 +31,8 @@ def eligible_items(
     """Sorted item ids per type that may appear in a dinner under the current rules and stock."""
     pools: dict[ItemType, list[int]] = {item_type: [] for item_type in ItemType}
     for item in snapshot.items.values():
+        if item.is_complete_meal:
+            continue
         if item.id in rules.blocked_items:
             continue
         if item.track_stock and item.id in ctx.out_of_stock:
@@ -53,24 +55,48 @@ def generate_candidates(
     than the template needs, or when `limit` is not positive. Callers surface that through the
     existing infeasibility warnings.
     """
-    sizes = {item_type: count for item_type, count in ctx.template.slots.items() if count}
-    if limit <= 0 or not sizes:
+    if limit <= 0:
         return []
     rules = RuleIndex.build(snapshot.rules)
+    complete_meals = []
+    for item in sorted(snapshot.items.values(), key=lambda candidate: candidate.id):
+        if not item.is_complete_meal:
+            continue
+        candidate = (item.id,)
+        if (
+            hard_violation(
+                snapshot,
+                rules,
+                ctx.template,
+                ctx.out_of_stock,
+                Dinner(id=0, item_ids=candidate),
+            )
+            is None
+        ):
+            complete_meals.append(item.id)
+        if len(complete_meals) >= limit:
+            break
+    meal_candidates = {(item_id,) for item_id in complete_meals}
+    remaining_limit = limit - len(meal_candidates)
+
+    sizes = {item_type: count for item_type, count in ctx.template.slots.items() if count}
+    if remaining_limit <= 0 or not sizes:
+        return sorted(meal_candidates)
+
     pools = eligible_items(snapshot, ctx, rules)
     if any(len(pools[item_type]) < count for item_type, count in sizes.items()):
-        return []
+        return sorted(meal_candidates)
 
     def is_valid(item_ids: CandidateSet) -> bool:
         dinner = Dinner(id=0, item_ids=item_ids)
         return hard_violation(snapshot, rules, ctx.template, ctx.out_of_stock, dinner) is None
 
     total = math.prod(math.comb(len(pools[item_type]), count) for item_type, count in sizes.items())
-    if total <= limit:
+    if total <= remaining_limit:
         found = _enumerate(pools, sizes, is_valid)
     else:
-        found = _sample(pools, sizes, is_valid, seed, limit)
-    return sorted(found)[:limit]
+        found = _sample(pools, sizes, is_valid, seed, remaining_limit)
+    return sorted(meal_candidates | found)[:limit]
 
 
 def _enumerate(

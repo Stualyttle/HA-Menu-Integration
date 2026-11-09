@@ -38,7 +38,7 @@ Status column: **Implemented** means the route exists in `addon/app/api/` and ha
 | GET | `/api/menu/{date}/swap` | Bare array of up to three `DinnerOut` suggestions that satisfy all hard rules. Today (until eaten) and future days in the window | Implemented |
 | POST | `/api/menu/{date}/swap` | Body `{item_ids: [int, ...]}` for a suggestion, or `{dinner_id}` for a persisted dinner. Applies and persists only the selected dinner. Today (until eaten) and future days in the window. Returns the day | Implemented |
 
-Day object (`MenuDayOut`): `{date, status: planned|pinned|eaten|empty, dinner: {id, items: [{id, name, type}]} | null, kcal, balance, replaced_reason}`. `kcal` is `null` when a component lacks verified nutrition. `balance` is `ok`, `off_target`, or `unknown`. Swap suggestions return the same dinner shape; `id` is `null` for a generated dinner that is not yet stored. Use its item IDs in the `item_ids` request body rather than treating that null ID as a database reference.
+Day object (`MenuDayOut`): `{date, status: planned|pinned|eaten|empty, dinner: {id, items: [{id, name, type, is_complete_meal}]} | null, kcal, balance, replaced_reason}`. `kcal` is `null` when an item lacks portion or nutrition data. A complete meal reports `balance: unknown` because its nutrition is not split into component grams. Swap suggestions return the same dinner shape; `id` is `null` for a generated dinner that is not yet stored. Use its item IDs in the `item_ids` request body rather than treating that null ID as a database reference.
 
 Generated candidate dinners are transient while reading or checking rules. A planner write stores only the candidate dinners selected for the resulting plan. Fetching swap suggestions does not write candidates; applying a suggestion identifies it by its item IDs and persists it as part of the swap.
 
@@ -59,7 +59,9 @@ Errors: a date outside the window or a past date in a swap or PUT returns 409 (`
 | PUT / DELETE | `/api/rules/{id}` | Update / delete | Implemented |
 | POST | `/api/rules/check` | Feasibility check without saving. Body `{rule: RuleIn, rule_id?: int}`. Returns `{feasible, exhausted, affected_days, locked_conflicts}` | Implemented |
 
-Item object (`ItemOut`): `{id, name, type: protein|vegetable|carb, portion_grams, fat_source, track_stock, category_ids, nutrition: {source, status, kcal, protein_g, carbs_g, fat_g, fiber_g, user_confirmed} | null}`.
+Item object (`ItemOut`): `{id, name, type: protein|vegetable|carb, portion_grams, fat_source, track_stock, is_complete_meal, category_ids, nutrition: {source, status, kcal, protein_g, carbs_g, fat_g, fiber_g, user_confirmed} | null}`. `is_complete_meal` is optional on input/import and defaults to `false` for backward compatibility. A complete meal must use technical type `carb`; it is planned as one standalone item, not combined with template components. Its stock status applies to the meal item itself, never to its ingredients.
+
+Menu dinner items use `{id, name, type, is_complete_meal}` so clients can distinguish standalone meals from components.
 
 Category object (`CategoryOut`): `{id, name, is_starter, min_per_7_days, item_count, item_ids}`.
 

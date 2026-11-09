@@ -55,6 +55,7 @@ class ExportService:
             "portion_grams": item.portion_grams,
             "fat_source": item.fat_source,
             "track_stock": item.track_stock,
+            "is_complete_meal": item.is_complete_meal,
             "nutrition": None,
         }
         nutrition = await self._nutrition.get_nutrition(item.id)

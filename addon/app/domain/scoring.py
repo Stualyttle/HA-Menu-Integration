@@ -116,7 +116,11 @@ class Scorer:
     def _add_grams(self, totals: dict[ItemType, float], dinner: Dinner) -> None:
         for item_id in self.snapshot.dinner_items(dinner):
             item = self.snapshot.items[item_id]
-            if item.portion_grams is None or not is_verified(self.snapshot, item_id):
+            if (
+                item.is_complete_meal
+                or item.portion_grams is None
+                or not is_verified(self.snapshot, item_id)
+            ):
                 continue
             totals[item.type] = totals.get(item.type, 0.0) + float(item.portion_grams)
 

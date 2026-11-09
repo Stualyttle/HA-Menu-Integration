@@ -88,7 +88,7 @@ export class MpItemsView extends MpView {
       : t('items.noPortion');
     return html`<tr data-id=${item.id}>
       <td>${item.name}</td>
-      <td><span class="chip-type">${typeLabel(item.type)}</span></td>
+      <td><span class="chip-type">${item.is_complete_meal ? t('items.completeMeal') : typeLabel(item.type)}</span></td>
       <td class="muted">${portion}</td>
       <td>
         <span class="badge ${verified ? 'verified' : 'unverified'}">

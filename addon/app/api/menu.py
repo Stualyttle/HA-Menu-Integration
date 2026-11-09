@@ -76,7 +76,12 @@ async def _lookups(stores: Stores) -> _Lookups:
 
 def _dinner_out(dinner: Dinner, lookups: _Lookups) -> DinnerOut:
     items = [
-        DinnerItemOut(id=item.id, name=item.name, type=item.type)
+        DinnerItemOut(
+            id=item.id,
+            name=item.name,
+            type=item.type,
+            is_complete_meal=item.is_complete_meal,
+        )
         for item_id in dinner.item_ids
         if (item := lookups.items.get(item_id)) is not None
     ]
@@ -106,6 +111,8 @@ def _balance(dinner: Dinner, lookups: _Lookups) -> Literal["ok", "off_target", "
     grams: dict[ItemType, float] = defaultdict(float)
     for item_id in dinner.item_ids:
         item = lookups.items.get(item_id)
+        if item is not None and item.is_complete_meal:
+            return "unknown"
         if item is None or item.portion_grams is None:
             return "unknown"
         grams[item.type] += item.portion_grams

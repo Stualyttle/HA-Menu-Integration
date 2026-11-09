@@ -10,6 +10,7 @@ A Home Assistant integration and add-on that plans healthy dinners for a rolling
 - **Integration**: connects Home Assistant to the add-on and exposes sensors, services, websocket commands, and the automatically registered Lovelace card bundle.
 - **Lovelace cards**: today's dinner with eaten/swap actions, stock checks with a non-mutating impact preview, and an expandable menu window.
 - **Planner**: generates dinners over a rolling window (7 to 60 days, default 14). Hard rules: blacklisted items, no items marked out of stock, and template counts. Soft rules: category minimums, repeat gap, whitelist, and balance. Details in [docs/PLAN.md](docs/PLAN.md) section 6.
+- **Starter catalog**: includes a broad Belgian/European family-food selection across poultry and meat cuts, fish, vegetarian proteins, vegetables, grains, potatoes, bread, pasta staples, and standalone meals such as spaghetti bolognese, lasagne, macaroni and cheese, and pizza. Complete meals can have their own stock and nutrition information; they are not ingredient recipes and do not deduct ingredient stock.
 
 ## Supported hardware
 

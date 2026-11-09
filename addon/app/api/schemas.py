@@ -35,12 +35,19 @@ class ItemIn(BaseModel):
     portion_grams: Annotated[float | None, Field(ge=0)] = None
     fat_source: bool = False
     track_stock: bool = True
+    is_complete_meal: bool = False
     category_ids: list[int] = Field(default_factory=list)
 
     @field_validator("name")
     @classmethod
     def _check_name(cls, value: str) -> str:
         return _strip_name(value)
+
+    @model_validator(mode="after")
+    def _complete_meal_uses_carb_type(self) -> ItemIn:
+        if self.is_complete_meal and self.type is not ItemType.CARB:
+            raise ValueError("complete meals must use the carb item type")
+        return self
 
 
 class NutritionOut(BaseModel):
@@ -74,6 +81,7 @@ class ItemOut(BaseModel):
     portion_grams: float | None
     fat_source: bool
     track_stock: bool
+    is_complete_meal: bool
     category_ids: list[int]
     nutrition: NutritionOut | None
 
@@ -88,6 +96,7 @@ class ItemOut(BaseModel):
             portion_grams=item.portion_grams,
             fat_source=item.fat_source,
             track_stock=item.track_stock,
+            is_complete_meal=item.is_complete_meal,
             category_ids=sorted(category_ids),
             nutrition=NutritionOut.from_model(nutrition) if nutrition else None,
         )
@@ -217,6 +226,7 @@ class DinnerItemOut(BaseModel):
     id: int
     name: str
     type: ItemType
+    is_complete_meal: bool
 
 
 class DinnerOut(BaseModel):

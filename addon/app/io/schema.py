@@ -24,7 +24,17 @@ IMPORTABLE_SETTING_KEYS = frozenset(
 TOP_LEVEL_KEYS = frozenset(
     {"schema_version", "items", "categories", "rules", "template", "settings"}
 )
-ITEM_KEYS = frozenset({"name", "type", "portion_grams", "fat_source", "track_stock", "nutrition"})
+ITEM_KEYS = frozenset(
+    {
+        "name",
+        "type",
+        "portion_grams",
+        "fat_source",
+        "track_stock",
+        "is_complete_meal",
+        "nutrition",
+    }
+)
 NUTRITION_KEYS = frozenset(
     {
         "source",
@@ -69,6 +79,7 @@ class ItemDoc:
     portion_grams: float | None
     fat_source: bool
     track_stock: bool
+    is_complete_meal: bool
     nutrition: NutritionDoc | None
 
 
@@ -191,12 +202,15 @@ def _parse_item(raw: object, path: str, c: _Collector) -> ItemDoc | None:
         c.add(f"{path}.portion_grams", "must be greater than zero or null")
     fat_source = _bool(raw, "fat_source", False, path, c)
     track_stock = _bool(raw, "track_stock", True, path, c)
+    is_complete_meal = _bool(raw, "is_complete_meal", False, path, c)
+    if is_complete_meal and item_type is not ItemType.CARB:
+        c.add(f"{path}.type", "complete meals must use the carb item type")
     nutrition = None
     if raw.get("nutrition") is not None:
         nutrition = _parse_nutrition(raw["nutrition"], f"{path}.nutrition", c)
     if name is None:
         return None
-    return ItemDoc(name, item_type, portion, fat_source, track_stock, nutrition)
+    return ItemDoc(name, item_type, portion, fat_source, track_stock, is_complete_meal, nutrition)
 
 
 def _parse_category(raw: object, path: str, c: _Collector) -> CategoryDoc | None:

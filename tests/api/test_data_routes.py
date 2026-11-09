@@ -56,19 +56,21 @@ def _error_code(response) -> str:
 def test_list_items_returns_starter_content(client: TestClient) -> None:
     response = client.get("/api/items")
     assert response.status_code == 200
-    assert len(response.json()) == 16
+    assert len(response.json()) > 150
+    assert any(item["name"] == "pizza" and item["is_complete_meal"] for item in response.json())
 
 
 def test_create_get_update_delete_item(client: TestClient) -> None:
     created = client.post(
         "/api/items",
-        json={"name": "  Edamame  ", "type": "protein", "portion_grams": 120},
+        json={"name": "  Edamame test  ", "type": "protein", "portion_grams": 120},
     )
     assert created.status_code == 201
     body = created.json()
-    assert body["name"] == "Edamame"
+    assert body["name"] == "Edamame test"
     assert body["type"] == "protein"
     assert body["portion_grams"] == 120
+    assert body["is_complete_meal"] is False
     assert body["nutrition"] is None
     item_id = body["id"]
 
@@ -76,11 +78,17 @@ def test_create_get_update_delete_item(client: TestClient) -> None:
 
     updated = client.put(
         f"/api/items/{item_id}",
-        json={"name": "Edamame", "type": "carb", "track_stock": False},
+        json={
+            "name": "Edamame test",
+            "type": "carb",
+            "track_stock": False,
+            "is_complete_meal": True,
+        },
     )
     assert updated.status_code == 200
     assert updated.json()["type"] == "carb"
     assert updated.json()["track_stock"] is False
+    assert updated.json()["is_complete_meal"] is True
 
     assert client.delete(f"/api/items/{item_id}").status_code == 204
     assert client.get(f"/api/items/{item_id}").status_code == 404
@@ -100,6 +108,13 @@ def test_item_rejects_blank_name_and_bad_type(client: TestClient) -> None:
     bad_type = client.post("/api/items", json={"name": "Soup", "type": "dessert"})
     assert bad_type.status_code == 400
     assert _error_code(bad_type) == "validation_error"
+
+    bad_complete_type = client.post(
+        "/api/items",
+        json={"name": "Invalid complete dish", "type": "protein", "is_complete_meal": True},
+    )
+    assert bad_complete_type.status_code == 400
+    assert _error_code(bad_complete_type) == "validation_error"
 
 
 def test_item_missing_returns_404_envelope(client: TestClient) -> None:
@@ -141,7 +156,7 @@ def test_list_categories_returns_starter_content(client: TestClient) -> None:
     response = client.get("/api/categories")
     assert response.status_code == 200
     names = {c["name"] for c in response.json()}
-    assert len(names) == 8
+    assert len(names) >= 20
     fish = next(c for c in response.json() if c["name"].lower() == "fish")
     assert fish["min_per_7_days"] == 1
     assert fish["is_starter"] is True
@@ -484,5 +499,5 @@ def test_lifespan_opens_database_under_db_path(tmp_path: Path) -> None:
     db_path = tmp_path / "lifespan.db"
     app = create_app(require_token=False, db_path=db_path)
     with TestClient(app) as client:
-        assert len(client.get("/api/items").json()) == 16
+        assert len(client.get("/api/items").json()) > 150
     assert db_path.exists()

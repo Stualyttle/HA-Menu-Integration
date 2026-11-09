@@ -34,9 +34,9 @@ Out of scope (v1): breakfast and lunch, allergies and diets, stock quantities, i
 |---|---|
 | Add-on | The server app (FastAPI + SQLite) with the full dashboard. User-facing text says "Add-on". |
 | Integration | The HA component (`custom_components/menu_planner`): card data, sensors, services, notifications. |
-| Item | A food with one type: protein, vegetable, or carb. Stock is tracked per item, which acts as one ingredient (assumed). |
+| Item | A food with one type: protein, vegetable, or carb. Ordinary items are dinner components; an item can instead be marked as a complete meal and planned standalone. Stock is per item, not a recipe ingredient. |
 | Category | A label on items (for example fish, Asian). An item can have several. |
-| Dinner | A set of items (no duplicate sets). The template gives the count per type (protein, vegetable, carb; 0 to 2 each), and a dinner is valid when its per-type counts equal the template. Its categories are the union of its items' categories. |
+| Dinner | A set of items (no duplicate sets). A component dinner meets the template counts per type (protein, vegetable, carb; 0 to 2 each). A complete-meal item is a valid one-item dinner and cannot be combined with components. Its categories are the union of its items' categories. |
 | Window | The days shown and planned: today plus N-1 days. N defaults to 14, range 7 to 60. |
 | Hard rule | Never violated. If no dinner fits, the day is left empty. |
 | Soft rule | Scored. Violated only when nothing better fits, with a warning. |
@@ -89,7 +89,7 @@ SQLite, schema versioned with `PRAGMA user_version`.
 
 | Table | Key columns |
 |---|---|
-| `items` | id, name (unique, case-insensitive), type (protein / vegetable / carb), portion_grams (per household, nullable), fat_source (bool), track_stock (bool), created_at, updated_at |
+| `items` | id, name (unique, case-insensitive), type (protein / vegetable / carb), portion_grams (per household, nullable), fat_source (bool), track_stock (bool), is_complete_meal (bool; schema v2), created_at, updated_at |
 | `nutrition` | item_id (PK), source (open_food_facts / usda / manual), external_id, matched_name, kcal, protein_g, carbs_g, fat_g, fiber_g (per 100 g), user_confirmed (bool), status (ok / not_found / error), fetched_at |
 | `categories` | id, name (unique, case-insensitive), is_starter |
 | `item_categories` | item_id, category_id |
@@ -114,6 +114,7 @@ Settings keys: `window_days` (7 to 60, default 14), `household_size` (default 2)
 - A blacklisted item is never planned.
 - A dinner is invalid when its categories (the union over its items) contain every category of an enabled blacklist combination (assumed).
 - Template slot counts are always met.
+- A complete meal is a standalone exception to template counts; it cannot be combined with other items and obeys item, combination, and stock rules.
 - Pinned and eaten days are fixed. Past days are history and never change.
 
 ### 6.2 Soft rules and priority
@@ -131,7 +132,7 @@ Conflicts resolve in this order, highest first:
 - Minimum shortfall: a large penalty per missing dinner in any 7-day span. Candidates containing a short category get a bonus.
 - Repeat gap: a penalty for each item used within the gap.
 - Whitelist match: a bonus.
-- Balance: a penalty for distance from the targets; a bonus for `fat_source` items.
+- Balance: a penalty for distance from the targets; a bonus for `fat_source` items. Complete meals do not contribute to component gram balance, which is reported as unknown.
 - Ties are broken by a seeded random generator (seed = date plus replan revision). Results look random but are reproducible in tests.
 
 ### 6.4 Filling and re-planning
@@ -200,7 +201,7 @@ Conflicts resolve in this order, highest first:
 
 ## 8. Import and export
 
-- Export: one JSON file with `schema_version: 1`. It contains items, categories, minimums, rules, template, settings (secrets excluded), and history (menu days, dinners, eaten status). References use names, not IDs.
+- Export: one JSON file with `schema_version: 1`. It contains items, categories, minimums, rules, template, and settings (secrets excluded). References use names, not IDs. The optional `is_complete_meal` item field defaults to false when importing older exports.
 - Import: validate the schema version and structure, show a preview (added and skipped counts), then merge.
 - Merge: items and categories match by name, case-insensitive. Existing ones are skipped (not updated). New ones are added. Rules and minimums are skipped when an equivalent one exists.
 - Settings and history are imported only when ticked in the preview **(proposal)**.
@@ -210,14 +211,14 @@ Conflicts resolve in this order, highest first:
 Sidebar panel via Ingress (`panel_title: Menu Planner`). Tabs:
 
 1. **Menu**: the window with status badges (planned, pinned, eaten, empty). A day replaced by a stock change also shows a "replaced" badge (`replaced_reason` is set). Pin, edit, swap, log eaten. Warnings banner.
-2. **Items**: search and filters (type, category, verified, stock). Add or edit: name, type, categories, portion, fat source, track stock, nutrition lookup or manual entry, confirm match.
+2. **Items**: search and filters (type, category, verified, stock). Add or edit: name, type, categories, portion, fat source, stock tracking, complete-meal flag, nutrition lookup or manual entry, confirm match.
 3. **Categories**: name, minimum per 7 days, item count. Starter categories are editable and deletable.
 4. **Rules**: blacklist and whitelist. A combination builder (pick categories) and item rules. Feasibility warnings.
 5. **Stock**: yes/no per item, with a preview of how many dinners a "no" would replace before saving.
 6. **Settings**: window length (7 to 60, default 14), household size (2), repeat gap (14), balance targets, dinner template (slot counts), language, USDA API key, nutrition retry.
 7. **Import / export**: export the file; import with a preview.
 
-Starter content on first install: categories and example items, all editable or deletable (Appendix A).
+Starter content on first install and database upgrade: a broad Belgian/European family-food catalog of meat and poultry cuts, fish and seafood, vegetarian proteins, vegetables, grains, potatoes, bread, pasta and prepared meals (including spaghetti bolognese, lasagne, macaroni and cheese, and pizza). Catalog items and categories are editable or deletable (Appendix A; migration v2).
 
 ## 10. Lovelace cards
 
@@ -341,12 +342,8 @@ Rules: each agent edits only the files it owns. API changes go through `docs/API
 - Assumptions in section 15: accepted by the user.
 - Time zone source, dinner title, and card element name: decided (section 4.5, section 10).
 
-## Appendix A: Starter content (proposal)
+## Appendix A: Starter content
 
-- Categories: fish, poultry, red meat, vegetarian, legumes, Asian, Mediterranean, Mexican.
-- Minimums (editable): fish at least 1 per 7 days; vegetarian at least 2 per 7 days.
-- Example items:
-  - Protein: salmon, chicken breast, lean beef mince, tofu, lentils, chickpeas.
-  - Vegetable: broccoli, spinach, carrot, bell pepper, zucchini.
-  - Carb: brown rice, potatoes, whole-wheat pasta, quinoa, bulgur.
-- Example item links: salmon (fish, Mediterranean); tofu (vegetarian, Asian); lentils (legumes, vegetarian).
+The starter catalog is defined in `addon/app/db/starter_content.py` and added by migration v2. It builds on the original v1 seeds and covers common poultry and meat cuts, Belgian and nearby fish/seafood, vegetarian proteins, familiar Belgian/European vegetables, potatoes, rice/grains, bread, pasta/noodles, and ready-made dinners. Prepared examples include lasagne, spaghetti bolognese, macaroni and cheese, pizza, vegetable lasagne, shepherd's pie, fish pie, vol-au-vent with fries, and stoemp with sausage.
+
+Categories include fish, poultry, chicken, veal, pork, beef, lamb/game, seafood, vegetarian, legumes, pasta, rice/grains, potatoes, vegetables, Belgian, Asian, Mediterranean, and Mexican. Minimums remain editable: fish at least 1 and vegetarian at least 2 per 7 days. Component staples (for example spaghetti and lasagne sheets) remain distinct from complete dinner choices (for example spaghetti bolognese and lasagne).

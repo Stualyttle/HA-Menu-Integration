@@ -10,6 +10,8 @@ import sqlite3
 from collections.abc import Callable
 from datetime import UTC, datetime
 
+from app.db.starter_content import STARTER_CATALOG_V2, STARTER_CATEGORIES_V2
+
 Migration = Callable[[sqlite3.Connection], None]
 
 SCHEMA_V1 = """
@@ -231,4 +233,40 @@ def _v1(conn: sqlite3.Connection) -> None:
     _seed_starter_content(conn)
 
 
-MIGRATIONS: tuple[Migration, ...] = (_v1,)
+def _v2(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "ALTER TABLE items ADD COLUMN is_complete_meal INTEGER NOT NULL DEFAULT 0"
+        " CHECK (is_complete_meal IN (0, 1))"
+    )
+
+    category_ids: dict[str, int] = {}
+    for name in (*STARTER_CATEGORIES, *STARTER_CATEGORIES_V2):
+        row = conn.execute(
+            "SELECT id FROM categories WHERE name = ? COLLATE NOCASE", (name,)
+        ).fetchone()
+        if row is None:
+            cur = conn.execute("INSERT INTO categories (name, is_starter) VALUES (?, 1)", (name,))
+            category_ids[name] = int(cur.lastrowid or 0)
+        else:
+            category_ids[name] = int(row["id"])
+
+    for name, item_type, category_names, complete_meal, fat_source in STARTER_CATALOG_V2:
+        row = conn.execute("SELECT id FROM items WHERE name = ? COLLATE NOCASE", (name,)).fetchone()
+        if row is None:
+            now = _now()
+            cur = conn.execute(
+                "INSERT INTO items (name, type, fat_source, track_stock, created_at, updated_at,"
+                " is_complete_meal) VALUES (?, ?, ?, 0, ?, ?, ?)",
+                (name, item_type.value, int(fat_source), now, now, int(complete_meal)),
+            )
+            item_id = int(cur.lastrowid or 0)
+        else:
+            item_id = int(row["id"])
+
+        conn.executemany(
+            "INSERT OR IGNORE INTO item_categories (item_id, category_id) VALUES (?, ?)",
+            [(item_id, category_ids[category]) for category in category_names],
+        )
+
+
+MIGRATIONS: tuple[Migration, ...] = (_v1, _v2)

@@ -10,7 +10,7 @@ import pytest
 
 from app.db import DuplicateNameError, NotFoundError, Stores
 from app.db.connection import Database
-from app.db.migrations import DEFAULT_SETTINGS, DEFAULT_TEMPLATE
+from app.db.migrations import DEFAULT_SETTINGS, DEFAULT_TEMPLATE, _v1
 from app.models import (
     Category,
     DayStatus,
@@ -48,7 +48,7 @@ async def _starter_dinner_parts(stores: Stores) -> tuple[int, int, int]:
 
 
 def test_schema_version_is_current(stores: Stores) -> None:
-    assert stores.database.schema_version == 1
+    assert stores.database.schema_version == 2
 
 
 def test_reopen_does_not_reseed_or_change_version(tmp_path: Path) -> None:
@@ -59,22 +59,63 @@ def test_reopen_does_not_reseed_or_change_version(tmp_path: Path) -> None:
 
     second = Stores.open(path)
     try:
-        assert second.database.schema_version == 1
+        assert second.database.schema_version == 2
         count = second.database.query_one("SELECT COUNT(*) AS n FROM item_categories")
         assert count["n"] == 0
     finally:
         second.close()
 
 
+async def test_v1_database_upgrades_without_losing_existing_items(tmp_path: Path) -> None:
+    path = tmp_path / "legacy.db"
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    _v1(conn)
+    conn.execute(
+        "INSERT INTO items (name, type, portion_grams, fat_source, track_stock, created_at,"
+        " updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        ("Existing family meal", "carb", 450, 0, 1, "2024-01-01", "2024-01-01"),
+    )
+    conn.execute("PRAGMA user_version = 1")
+    conn.commit()
+    conn.close()
+
+    stores = Stores.open(path)
+    try:
+        assert stores.database.schema_version == 2
+        item = await _find_item(stores, "Existing family meal")
+        assert item.portion_grams == 450
+        assert item.track_stock is True
+        assert item.is_complete_meal is False
+        assert await _find_item(stores, "pizza")
+    finally:
+        stores.close()
+
+
 async def test_starter_content_is_seeded(stores: Stores) -> None:
     items = await stores.items.list_items()
     categories = await stores.categories.list_categories()
-    assert len(items) == 16
-    assert len(categories) == 8
+    assert len(items) > 150
+    assert len(categories) >= 18
+    names = {item.name for item in items}
+    assert {"spaghetti", "lasagne sheets", "macaroni", "pizza", "whole chicken"} <= names
     fish = next(c for c in categories if c.name == "fish")
     assert fish.is_starter is True
     assert fish.min_per_7_days == 1
     assert stores.template.get() == DEFAULT_TEMPLATE
+
+
+async def test_starter_catalog_category_references_exist(stores: Stores) -> None:
+    from app.db.starter_content import STARTER_CATALOG_V2
+
+    categories = {
+        category.name.casefold() for category in await stores.categories.list_categories()
+    }
+    assert {
+        category.casefold()
+        for _, _, item_categories, _, _ in STARTER_CATALOG_V2
+        for category in item_categories
+    } <= categories
 
 
 async def test_starter_item_links(stores: Stores) -> None:
@@ -200,7 +241,7 @@ async def test_category_delete_keeps_items(stores: Stores) -> None:
     await stores.categories.delete_category(created.id)
     categories = await stores.categories.list_categories()
     assert all(c.id != created.id for c in categories)
-    assert len(await stores.items.list_items()) == 16
+    assert len(await stores.items.list_items()) > 150
 
 
 async def test_deleting_item_removes_its_category_links(stores: Stores) -> None:

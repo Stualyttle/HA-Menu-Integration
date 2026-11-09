@@ -36,6 +36,7 @@ function emptyForm() {
     portion_grams: DEFAULT_PORTION_GRAMS,
     fat_source: false,
     track_stock: false,
+    is_complete_meal: false,
     category_ids: [],
   };
 }
@@ -47,6 +48,7 @@ function formFromItem(item) {
     portion_grams: item.portion_grams == null ? '' : String(item.portion_grams),
     fat_source: Boolean(item.fat_source),
     track_stock: Boolean(item.track_stock),
+    is_complete_meal: Boolean(item.is_complete_meal),
     category_ids: [...(item.category_ids ?? [])],
   };
 }
@@ -170,6 +172,7 @@ export class MpItemDialog extends MpView {
       portion_grams: toNumber(this.form.portion_grams),
       fat_source: this.form.fat_source,
       track_stock: this.form.track_stock,
+      is_complete_meal: this.form.is_complete_meal,
       category_ids: this.form.category_ids,
     };
   }
@@ -329,22 +332,42 @@ export class MpItemDialog extends MpView {
           ></md-outlined-text-field>
 
           <fieldset class="stack">
-            <legend class="field-label">${t('item.type')}</legend>
-            <div class="chips">
-              ${TYPES.map(
-                (type) => html`
-                  <label class="row">
-                    <md-radio
-                      name="item-type"
-                      value=${type}
-                      ?checked=${this.form.type === type}
-                      @change=${() => this.setField('type', type)}
-                    ></md-radio>
-                    ${typeLabel(type)}
-                  </label>`,
-              )}
-            </div>
+            <legend class="field-label">${t('item.flags')}</legend>
+            <label class="switch-row">
+              <md-switch
+                ?selected=${this.form.is_complete_meal}
+                @change=${(e) => {
+                  const isCompleteMeal = e.target.selected;
+                  this.form = {
+                    ...this.form,
+                    is_complete_meal: isCompleteMeal,
+                    type: isCompleteMeal ? 'carb' : this.form.type,
+                  };
+                }}
+              ></md-switch>
+              <span><strong>${t('item.completeMeal')}</strong><br /><span class="muted">${t('item.completeMealHelp')}</span></span>
+            </label>
           </fieldset>
+
+          ${this.form.is_complete_meal
+            ? ''
+            : html`<fieldset class="stack">
+                <legend class="field-label">${t('item.type')}</legend>
+                <div class="chips">
+                  ${TYPES.map(
+                    (type) => html`
+                      <label class="row">
+                        <md-radio
+                          name="item-type"
+                          value=${type}
+                          ?checked=${this.form.type === type}
+                          @change=${() => this.setField('type', type)}
+                        ></md-radio>
+                        ${typeLabel(type)}
+                      </label>`,
+                  )}
+                </div>
+              </fieldset>`}
 
           <fieldset class="stack">
             <legend class="field-label">${t('item.categories')}</legend>
@@ -370,7 +393,6 @@ export class MpItemDialog extends MpView {
           ></md-outlined-text-field>
 
           <fieldset class="stack">
-            <legend class="field-label">${t('item.flags')}</legend>
             <label class="switch-row">
               <md-switch
                 ?selected=${this.form.fat_source}

@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import timedelta
 
+from app.domain.engine import valid_pool
+from app.domain.feasibility import search_minimums
+from app.domain.rules import RuleIndex
+from app.models import DayStatus, WarningCode
 from tests.domain.fakes import (
     BEEF,
     CHICKEN,
@@ -20,11 +24,6 @@ from tests.domain.fakes import (
     standard_household,
     window_dates,
 )
-
-from app.domain.engine import valid_pool
-from app.domain.feasibility import search_minimums
-from app.domain.rules import RuleIndex
-from app.models import DayStatus, WarningCode
 
 
 def _pool_for(store, ctx):

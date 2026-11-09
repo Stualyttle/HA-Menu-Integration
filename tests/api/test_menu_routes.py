@@ -83,6 +83,39 @@ def test_list_menu_planned_day_has_dinner_items(client: TestClient) -> None:
     assert dinner is not None
     assert dinner["id"] > 0
     assert {"id", "name", "type"} <= set(dinner["items"][0])
+    assert "is_complete_meal" in dinner["items"][0]
+
+
+def test_complete_meal_can_be_swapped_as_standalone_and_reports_unknown_balance(
+    client: TestClient,
+) -> None:
+    created = client.post(
+        "/api/items",
+        json={
+            "name": "Complete dinner test",
+            "type": "carb",
+            "track_stock": False,
+            "is_complete_meal": True,
+        },
+    )
+    assert created.status_code == 201
+    _list(client)
+
+    response = client.post(
+        f"/api/menu/{_future_day(client)}/swap",
+        json={"item_ids": [created.json()["id"]]},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["balance"] == "unknown"
+    assert response.json()["dinner"]["items"] == [
+        {
+            "id": created.json()["id"],
+            "name": "Complete dinner test",
+            "type": "carb",
+            "is_complete_meal": True,
+        }
+    ]
 
 
 def test_list_menu_respects_from_and_to(client: TestClient) -> None:

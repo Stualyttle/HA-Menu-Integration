@@ -53,21 +53,30 @@ def hard_violation(
 ) -> str | None:
     """Return the reason a dinner breaks a hard rule, or None when it is valid.
 
-    A dinner is valid only when, for every type, its item count equals the template count.
+    A complete meal is a standalone dinner. Other dinners must match every template slot.
     """
-    counts = dict.fromkeys(ItemType, 0)
-    for item_id in snapshot.dinner_items(dinner):
+    item_ids = snapshot.dinner_items(dinner)
+    items = []
+    for item_id in item_ids:
         item = snapshot.items.get(item_id)
         if item is None:
             return "missing_item"
-        counts[item.type] += 1
+        items.append(item)
         if item_id in rules.blocked_items:
             return "blacklisted_item"
         if item.track_stock and item_id in out_of_stock:
             return "out_of_stock"
-    for item_type, expected in template.slots.items():
-        if counts[item_type] != expected:
-            return "slot_count_mismatch"
+    complete_meals = [item for item in items if item.is_complete_meal]
+    if complete_meals:
+        if len(items) != 1:
+            return "complete_meal_mixed"
+    else:
+        counts = dict.fromkeys(ItemType, 0)
+        for item in items:
+            counts[item.type] += 1
+        for item_type, expected in template.slots.items():
+            if counts[item_type] != expected:
+                return "slot_count_mismatch"
     categories = snapshot.dinner_categories(dinner)
     for combination in rules.blacklist_combinations:
         if combination <= categories:

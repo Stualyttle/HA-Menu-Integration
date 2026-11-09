@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from app.domain.config import Template
+from app.domain.rules import RuleIndex, hard_violation
+from app.models import DayStatus, Dinner, ItemType, MenuDay, Rule, RuleKind, RuleScope
 from tests.domain.fakes import (
     BEEF,
     BROCCOLI,
@@ -25,10 +28,6 @@ from tests.domain.fakes import (
     window_dinners,
     window_status,
 )
-
-from app.domain.config import Template
-from app.domain.rules import RuleIndex, hard_violation
-from app.models import DayStatus, Dinner, ItemType, MenuDay, Rule, RuleKind, RuleScope
 
 STANDARD_TEMPLATE = Template()
 
@@ -131,6 +130,34 @@ def test_hard_violation_reports_missing_item():
     reason = hard_violation(snapshot, RuleIndex.build([]), STANDARD_TEMPLATE, frozenset(), dinner)
 
     assert reason == "missing_item"
+
+
+def test_complete_meals_bypass_template_but_cannot_be_combined():
+    store = standard_household()
+    meal_id = POTATO + 100
+    store.items[meal_id] = store.items[POTATO].__class__(
+        id=meal_id,
+        name="Lasagne",
+        type=ItemType.CARB,
+        is_complete_meal=True,
+    )
+    snapshot = snapshot_of(store)
+    rules = RuleIndex.build([])
+
+    assert (
+        hard_violation(snapshot, rules, STANDARD_TEMPLATE, frozenset(), Dinner(1, (meal_id,)))
+        is None
+    )
+    assert (
+        hard_violation(
+            snapshot,
+            rules,
+            STANDARD_TEMPLATE,
+            frozenset(),
+            Dinner(2, tuple(sorted((meal_id, BROCCOLI)))),
+        )
+        == "complete_meal_mixed"
+    )
 
 
 def test_two_protein_one_vegetable_no_carb_template_counts():

@@ -68,6 +68,7 @@ class Item:
     track_stock: bool = True
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    is_complete_meal: bool = False
 
 
 @dataclass(slots=True)

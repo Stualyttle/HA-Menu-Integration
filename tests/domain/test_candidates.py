@@ -4,6 +4,10 @@ from collections import Counter
 from dataclasses import replace
 from datetime import timedelta
 
+from app.domain.candidates import MAX_CANDIDATES, generate_candidates
+from app.domain.config import PlanContext, Template
+from app.domain.snapshot import PlanSnapshot
+from app.models import Item, ItemType, WarningCode
 from tests.domain.fakes import (
     BEEF,
     BROCCOLI,
@@ -22,11 +26,6 @@ from tests.domain.fakes import (
     standard_household,
     window_dates,
 )
-
-from app.domain.candidates import MAX_CANDIDATES, generate_candidates
-from app.domain.config import PlanContext, Template
-from app.domain.snapshot import PlanSnapshot
-from app.models import Item, ItemType, WarningCode
 
 
 def snapshot_with(store: FakeStore) -> PlanSnapshot:
@@ -182,6 +181,36 @@ def test_missing_type_yields_no_candidates_without_raising():
         del store.items[item_id]
 
     assert generate_candidates(snapshot_with(store), template_ctx(standard_slots()), "s") == []
+
+
+def test_complete_meals_are_standalone_candidates_even_when_template_pools_are_empty():
+    store = standard_household()
+    store.items[CHICKEN] = replace(store.items[CHICKEN], type=ItemType.CARB, is_complete_meal=True)
+    for item_id in (BEEF, BROCCOLI, RICE, PASTA, POTATO, SPINACH, CARROT):
+        store.items.pop(item_id, None)
+
+    candidates = generate_candidates(
+        snapshot_with(store),
+        template_ctx(standard_slots()),
+        "complete-meal",
+    )
+
+    assert candidates == [(CHICKEN,)]
+
+
+def test_complete_meals_respect_item_blacklist_and_stock_rules():
+    store = standard_household()
+    store.items[CHICKEN] = replace(
+        store.items[CHICKEN], type=ItemType.CARB, is_complete_meal=True, track_stock=True
+    )
+    ctx = template_ctx(standard_slots(), out_of_stock={CHICKEN})
+
+    assert (CHICKEN,) not in generate_candidates(snapshot_with(store), ctx, "stock")
+
+    store.rules = {1: blacklist_item(1, CHICKEN)}
+    assert (CHICKEN,) not in generate_candidates(
+        snapshot_with(store), template_ctx(standard_slots()), "blacklist"
+    )
 
 
 def test_planner_load_keeps_generated_dinners_transient():

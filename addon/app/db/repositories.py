@@ -81,13 +81,14 @@ class SqliteItemRepository:
                 now = _now()
                 conn.execute(
                     "UPDATE items SET name = ?, type = ?, portion_grams = ?, fat_source = ?,"
-                    " track_stock = ?, updated_at = ? WHERE id = ?",
+                    " track_stock = ?, is_complete_meal = ?, updated_at = ? WHERE id = ?",
                     (
                         item.name,
                         str(item.type),
                         item.portion_grams,
                         int(item.fat_source),
                         int(item.track_stock),
+                        int(item.is_complete_meal),
                         now,
                         item.id,
                     ),
@@ -99,7 +100,7 @@ class SqliteItemRepository:
                 now = _now()
                 cur = conn.execute(
                     "INSERT INTO items (name, type, portion_grams, fat_source, track_stock,"
-                    " created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    " created_at, updated_at, is_complete_meal) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         item.name,
                         str(item.type),
@@ -108,6 +109,7 @@ class SqliteItemRepository:
                         int(item.track_stock),
                         now,
                         now,
+                        int(item.is_complete_meal),
                     ),
                 )
                 item_id = int(cur.lastrowid or 0)
@@ -121,6 +123,7 @@ class SqliteItemRepository:
             track_stock=item.track_stock,
             created_at=_ts(created_at),
             updated_at=_ts(now),
+            is_complete_meal=item.is_complete_meal,
         )
 
     async def delete_item(self, item_id: int) -> None:
@@ -557,6 +560,7 @@ def _item_from_row(row: sqlite3.Row) -> Item:
         track_stock=bool(row["track_stock"]),
         created_at=_ts(row["created_at"]),
         updated_at=_ts(row["updated_at"]),
+        is_complete_meal=bool(row["is_complete_meal"]),
     )
 
 

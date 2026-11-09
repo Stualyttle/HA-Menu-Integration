@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from io_fakes import Store
 
 from app.models import (
@@ -46,8 +48,16 @@ async def test_export_item_fields(store: Store) -> None:
         "portion_grams": 80.0,
         "fat_source": True,
         "track_stock": True,
+        "is_complete_meal": False,
         "nutrition": None,
     }
+
+
+async def test_export_preserves_complete_meal_flag(store: Store) -> None:
+    item = await store.add_item("Lasagne", ItemType.CARB)
+    await store.items.save_item(replace(item, is_complete_meal=True))
+    record = (await store.exporter().export())["items"][0]
+    assert record["is_complete_meal"] is True
 
 
 async def test_export_includes_manual_nutrition(store: Store) -> None:

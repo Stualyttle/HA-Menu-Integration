@@ -47,8 +47,8 @@ actionlint .github/workflows/ci.yaml .github/workflows/build-addon.yaml
 - Keep the planner pure. `plan()` in `addon/app/domain/engine.py` has no I/O. The async facade `MenuPlanner` in `service.py` does I/O.
 - The add-on never calls HA Core. The integration calls the add-on's internal port (8098) with `X-Menu-Planner-Token`, compared with `hmac.compare_digest`. The panel uses Ingress (8099) with no token.
 - Errors use the envelope `{"error": {"code","message","details"}}` via `install_error_handlers` in `addon/app/api/errors.py`. The 401 body is `{"detail": ...}` (documented exception in `docs/API.md`).
-- A dinner is a set of 0 to 2 items per type (`MAX_SLOT_COUNT` in `addon/app/domain/config.py`). Dedupe by sorted item-id set.
-- Soft rules have priority: category minimums, repeat gap, whitelist, balance. Hard rules: blacklist, "no" stock never planned, template counts, pinned and eaten days fixed.
+- Component dinners use the configured 0 to 2 item slots per type (`MAX_SLOT_COUNT` in `addon/app/domain/config.py`). Items marked `is_complete_meal` are standalone dinners, cannot mix with components, and bypass template counts. Keep that flag wired through API, DB migrations, import/export, and panel UI.
+- Soft rules have priority: category minimums, repeat gap, whitelist, balance. Hard rules: blacklist, "no" stock never planned, component template counts, pinned and eaten days fixed. Complete meals still obey stock and blacklist rules; their balance is unknown.
 - Only comment code that needs clarification.
 - Commits include the trailer `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
 

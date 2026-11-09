@@ -154,6 +154,7 @@ class ImportService:
                     portion_grams=item.portion_grams,
                     fat_source=item.fat_source,
                     track_stock=item.track_stock,
+                    is_complete_meal=item.is_complete_meal,
                 )
             )
             item_ids[item.name.casefold()] = saved.id

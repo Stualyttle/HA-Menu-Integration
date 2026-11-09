@@ -87,6 +87,7 @@ async def create_item(body: ItemIn, stores: StoresDep) -> ItemOut:
             portion_grams=body.portion_grams,
             fat_source=body.fat_source,
             track_stock=body.track_stock,
+            is_complete_meal=body.is_complete_meal,
         )
     )
     await _sync_categories(stores, saved.id, category_ids)
@@ -112,6 +113,7 @@ async def update_item(item_id: int, body: ItemIn, stores: StoresDep) -> ItemOut:
             portion_grams=body.portion_grams,
             fat_source=body.fat_source,
             track_stock=body.track_stock,
+            is_complete_meal=body.is_complete_meal,
         )
     )
     await _sync_categories(stores, item_id, category_ids)

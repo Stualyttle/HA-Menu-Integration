@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from app.models import DayStatus, MenuDay, WarningCode
 from tests.domain.fakes import (
     CHICKEN,
     MEAT,
@@ -17,8 +18,6 @@ from tests.domain.fakes import (
     window_dinners,
     window_status,
 )
-
-from app.models import DayStatus, MenuDay, WarningCode
 
 
 def _codes(result, code):

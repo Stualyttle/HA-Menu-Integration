@@ -46,7 +46,7 @@ def _error_code(response: Any) -> str:
 
 
 def test_export_has_schema_version_and_names_not_ids(client: TestClient, stores: Stores) -> None:
-    client.post("/api/items", json={"name": "Tempeh", "type": "protein", "track_stock": False})
+    client.post("/api/items", json={"name": "Test tempeh", "type": "protein", "track_stock": False})
 
     response = client.get("/api/export")
 
@@ -54,7 +54,7 @@ def test_export_has_schema_version_and_names_not_ids(client: TestClient, stores:
     body = response.json()
     assert body["schema_version"] == 1
     names = [item["name"] for item in body["items"]]
-    assert "Tempeh" in names
+    assert "Test tempeh" in names
     assert all("id" not in item for item in body["items"])
 
 
@@ -70,12 +70,12 @@ def test_export_excludes_usda_api_key(client: TestClient, stores: Stores) -> Non
 
 
 def test_import_preview_counts_added_and_skipped(client: TestClient) -> None:
-    client.post("/api/items", json={"name": "Rice", "type": "carb", "track_stock": False})
+    client.post("/api/items", json={"name": "Rice test", "type": "carb", "track_stock": False})
     document = _document(
         items=[
-            {"name": "Rice", "type": "carb"},
+            {"name": "Rice test", "type": "carb"},
             {"name": "Jackfruit", "type": "protein"},
-            {"name": "Tempeh", "type": "protein"},
+            {"name": "Test tempeh", "type": "protein"},
         ]
     )
 
@@ -98,13 +98,13 @@ def test_import_preview_reports_settings_available(client: TestClient) -> None:
 
 
 def test_import_merges_items(client: TestClient) -> None:
-    document = _document(items=[{"name": "Tempeh", "type": "protein"}])
+    document = _document(items=[{"name": "Test tempeh", "type": "protein"}])
 
     response = client.post("/api/import", json={"document": document})
 
     assert response.status_code == 200
     names = [item["name"] for item in client.get("/api/items").json()]
-    assert "Tempeh" in names
+    assert "Test tempeh" in names
 
 
 def test_import_without_include_settings_leaves_settings_alone(
