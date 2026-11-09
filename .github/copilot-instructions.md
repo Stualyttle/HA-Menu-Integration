@@ -18,6 +18,7 @@ Home Assistant integration (HACS, domain `menu_planner`) plus a companion add-on
 | `addon/config.yaml`, `addon/Dockerfile` | Add-on manifest and image build. `BUILD_FROM` derives from `BUILD_ARCH`. |
 | `custom_components/menu_planner/` | HA integration: config flow, coordinator (60 s poll), sensors, services, websocket commands. |
 | `frontend/panel/` | Lit panel source (Vite). Build output goes to `addon/app/static/panel/`. |
+| `frontend/cards/` | Lit Lovelace card source and helpers. Build output goes to `custom_components/menu_planner/www/`. |
 | `tests/` | `tests/integration/` for the HA integration (needs `/tmp/ha-venv`); other tests are add-on tests. |
 | `.github/workflows/` | `ci.yaml` (lint, test, hassfest, HACS). `build-addon.yaml` (per-arch GHCR images). |
 
@@ -33,8 +34,8 @@ PYTHONPATH=addon python -m pytest -q --ignore=tests/integration
 # Integration tests (venv with pytest-homeassistant-custom-component)
 python -m pytest -q tests/integration
 
-# Panel
-cd frontend/panel && npm test && npm run build
+# Panel and Lovelace cards
+cd frontend/panel && npm test && npm run build && npm run build:cards
 
 # Workflows
 actionlint .github/workflows/ci.yaml .github/workflows/build-addon.yaml
@@ -56,7 +57,7 @@ actionlint .github/workflows/ci.yaml .github/workflows/build-addon.yaml
 - `homeassistant_api: true` grants full admin. Do not enable it.
 - Discovery: the add-on POSTs to `http://supervisor/discovery` with `SUPERVISOR_TOKEN`. Import `HassioServiceInfo` from `homeassistant.helpers.service_info.hassio`.
 - Supervisor skips folders named `rootfs` and hidden folders.
-- Cards register with `window.customCards.push` and implement `getConfigForm()`, `getGridOptions()`, `getCardSize()`.
+- Cards register with `window.customCards.push` and implement `getConfigForm()`, `getGridOptions()`, `getCardSize()`. The integration serves and registers the versioned bundle automatically.
 
 ## Keep docs current
 

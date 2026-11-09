@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "build:cards": "vite build --config ../cards/vite.config.cjs",
     "test": "vitest run"
   },
   "dependencies": {

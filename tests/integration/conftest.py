@@ -78,6 +78,7 @@ def _enable_custom_integrations(enable_custom_integrations: None) -> None:
 _MENU_RANGE_RE = re.compile(rf"^{re.escape(BASE)}/api/menu(\?.*)?$")
 _STOCK_RE = re.compile(rf"^{re.escape(BASE)}/api/stock\?")
 _STOCK_ITEM_RE = re.compile(rf"^{re.escape(BASE)}/api/stock/\d+$")
+_STOCK_PREVIEW_RE = re.compile(rf"^{re.escape(BASE)}/api/stock/\d+/preview$")
 _EATEN_RE = re.compile(rf"^{re.escape(BASE)}/api/menu/[^/]+/eaten$")
 _SWAP_RE = re.compile(rf"^{re.escape(BASE)}/api/menu/[^/]+/swap$")
 
@@ -86,7 +87,7 @@ def register_addon(mocker: AiohttpClientMocker, **overrides: dict[str, Any]) -> 
     """Register every add-on route the integration calls.
 
     ``overrides`` maps a route key (sync, menu_today, menu_range, warnings, stock, swap,
-    swap_apply, eaten, stock_set) to aioclient_mock kwargs such as ``{"status": 409,
+    swap_apply, eaten, stock_set, stock_preview) to aioclient_mock kwargs such as ``{"status": 409,
     "json": ...}``. The first matching route wins, so call ``mocker.clear_requests()``
     before re-registering a route in a test.
     """
@@ -104,6 +105,7 @@ def register_addon(mocker: AiohttpClientMocker, **overrides: dict[str, Any]) -> 
         "swap_apply": ("post", _SWAP_RE, {"json": {}}),
         "eaten": ("post", _EATEN_RE, {"json": {}}),
         "stock_set": ("put", _STOCK_ITEM_RE, {"json": {}}),
+        "stock_preview": ("post", _STOCK_PREVIEW_RE, {"json": {"replaces_count": 2}}),
     }
     for key, (method, url, defaults) in routes.items():
         kwargs = {**defaults, **overrides.get(key, {})}

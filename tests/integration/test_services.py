@@ -12,6 +12,7 @@ from custom_components.menu_planner.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from .conftest import BASE, TODAY, async_setup_entry_for_test, envelope, register_addon
@@ -114,9 +115,7 @@ async def test_service_fails_when_entry_not_loaded(
 
 
 async def test_services_registered_without_entry(hass: HomeAssistant) -> None:
-    from custom_components.menu_planner import async_setup
-
-    assert await async_setup(hass, {})
+    assert await async_setup_component(hass, DOMAIN, {})
     assert hass.services.has_service(DOMAIN, SERVICE_LOG_EATEN)
     assert hass.services.has_service(DOMAIN, SERVICE_SET_STOCK)
     assert hass.services.has_service(DOMAIN, SERVICE_SWAP_TODAY)

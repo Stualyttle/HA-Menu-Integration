@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
@@ -96,10 +97,19 @@ class MenuPlannerClient:
     async def get_swap_suggestions(self, day: date) -> Any:
         return await self._request("GET", f"/api/menu/{day.isoformat()}/swap")
 
-    async def apply_swap(self, day: date, dinner_id: int) -> Any:
-        return await self._request(
-            "POST", f"/api/menu/{day.isoformat()}/swap", json={"dinner_id": dinner_id}
+    async def apply_swap(
+        self,
+        day: date,
+        *,
+        dinner_id: int | None = None,
+        item_ids: Sequence[int] | None = None,
+    ) -> Any:
+        body = (
+            {"dinner_id": dinner_id}
+            if dinner_id is not None
+            else {"item_ids": list(item_ids or [])}
         )
+        return await self._request("POST", f"/api/menu/{day.isoformat()}/swap", json=body)
 
     async def get_stock(self, *, unanswered_first: bool = True) -> Any:
         return await self._request(
@@ -110,6 +120,11 @@ class MenuPlannerClient:
 
     async def set_stock(self, item_id: int, in_stock: bool | None) -> Any:
         return await self._request("PUT", f"/api/stock/{item_id}", json={"in_stock": in_stock})
+
+    async def preview_stock(self, item_id: int, in_stock: bool) -> Any:
+        return await self._request(
+            "POST", f"/api/stock/{item_id}/preview", json={"in_stock": in_stock}
+        )
 
     async def get_warnings(self) -> Any:
         return await self._request("GET", "/api/warnings")

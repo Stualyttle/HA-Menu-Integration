@@ -30,7 +30,7 @@ export default defineConfig({
   },
   test: {
     dir: sharedDir,
-    include: ['**/*.test.js'],
+    include: ['**/*.test.js', '../cards/**/*.test.js'],
     environment: 'node',
   },
 });

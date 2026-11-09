@@ -47,7 +47,7 @@ jobs:
         run: python -m pytest -q tests/integration
 
   panel:
-    name: Panel tests and build
+    name: Panel and Lovelace card tests/build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -62,6 +62,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npm run build:cards
 
   hassfest:
     name: Hassfest and HACS validation

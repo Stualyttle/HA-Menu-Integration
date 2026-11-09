@@ -48,7 +48,7 @@ Out of scope (v1): breakfast and lunch, allergies and diets, stock quantities, i
 
 - **Add-on** (`addon/`): Python 3.12, FastAPI, SQLite in `/data`. Owns all data, the generator, nutrition lookup, and import/export. Serves the panel through Ingress.
 - **Integration** (`custom_components/menu_planner/`): config flow (discovery), coordinator (polls the add-on), sensors, websocket commands for the cards, services for automations, persistent notifications, shopping-list sync, card bundle serving.
-- **Frontend** (`frontend/`): Lit + Material Web (Material 3), with HA theme variables (decided). Two bundles: `panel` (add-on UI) and `cards` (Lovelace). Vite build **(proposal)**.
+- **Frontend** (`frontend/`): Lit + Material Web (Material 3), with HA theme variables (decided). Two Vite bundles: `panel` (add-on UI) and `cards` (Lovelace).
 
 ### 4.2 Data-flow rules
 
@@ -221,7 +221,7 @@ Starter content on first install: categories and example items, all editable or 
 
 ## 10. Lovelace cards
 
-Served by the integration at `/menu_planner/menu-planner-cards.js?v=<version>`. Registered with Lovelace automatically through `frontend.add_extra_js_url` **(proposal; verify in Phase 1; a manual resource is the fallback)**.
+Served by the integration at `/menu_planner/menu-planner-cards.js?v=<version>`. The integration registers the static path and adds the versioned URL through `frontend.add_extra_js_url`.
 
 | Card | Element | Content | Actions |
 |---|---|---|---|
@@ -231,7 +231,7 @@ Served by the integration at `/menu_planner/menu-planner-cards.js?v=<version>`. 
 
 Visual editors: each card implements `getConfigForm()` with options for title, number of rows, show kcal, show balance, show stock impact, and unanswered only. Each card sets `preview: true` for the card picker.
 
-Integration websocket commands **(proposal)**: `menu_planner/window`, `menu_planner/today`, `menu_planner/stock`, `menu_planner/stock/set`, `menu_planner/eaten`, `menu_planner/swap/suggestions`, `menu_planner/swap/apply`.
+Integration websocket commands: `menu_planner/window`, `menu_planner/today`, `menu_planner/stock`, `menu_planner/stock/set`, `menu_planner/stock/preview`, `menu_planner/eaten`, `menu_planner/swap/suggestions`, `menu_planner/swap/apply`. Swap apply accepts exactly one of a stored `dinner_id` or transient suggestion `item_ids`; today can be swapped until it is marked eaten.
 
 Services for automations **(proposal)**: `menu_planner.log_eaten`, `menu_planner.set_stock` (item, in_stock), `menu_planner.swap_today`.
 

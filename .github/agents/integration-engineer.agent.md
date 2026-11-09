@@ -20,6 +20,7 @@ Verify before reporting:
 ruff check custom_components tests
 python -m pytest -q tests/integration
 ```
-Run `tests/integration` with the HA venv that has `pytest-homeassistant-custom-component`.
+
+Run `tests/integration` with the HA venv that has `pytest-homeassistant-custom-component`. Verify that card assets under `custom_components/menu_planner/www/` are served and the versioned JS URL is registered by `async_setup`.
 
 Report: files changed, test counts, any contract assumptions still unverified against the add-on.

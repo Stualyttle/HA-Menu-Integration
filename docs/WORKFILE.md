@@ -6,16 +6,18 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-09 (wave 2 API alignment and read-only candidate loading implemented and verified)
+Last updated: 2026-11-09 (Lovelace cards and integration bundle delivery implemented)
 
 ## Status
 
-- **Phase:** Wave 2 API alignment and read-only candidate loading implemented. Wave 1 and repository docs/build workflows are committed; these wave 2 changes are in the working tree. Phase 1 live checks are deferred.
-- **Now:** Phase 8 (Lovelace cards) is next. Accepted decisions are implemented: keep the documented 401 `detail` response; persist generated dinners only when planner writes select them; use real API routes and payloads throughout the panel.
-- **Next:** Build and verify Phase 8 cards, then complete GitHub workflow/image validation and the remaining Phase 9–10 release work.
+- **Phase:** Lovelace card implementation complete; card bundle builds and is served/registered by the integration. Local validation is complete; live release checks remain.
+- **Now:** Phase 8 is implemented and verified locally. Continue GitHub workflow/image validation and remaining Phase 9–10 release work. Accepted decisions remain implemented: keep the documented 401 `detail` response; persist generated dinners only when planner writes select them; use real API routes and payloads throughout the panel.
+- **Next:** Run CI on GitHub, perform the remaining live Supervisor checks, and prepare the `v0.1.0` release.
 - **Blockers:** Live Supervisor checks need HA access details. The balance defaults (PLAN 6.9) are unverified. Remaining open questions: the 500-candidate cap and that household size does not scale portions.
 
 Verification (wave 2): ruff check and format clean. Add-on pytest 336 passed. Integration pytest 33 passed. Panel Vitest 20 passed; production build succeeded. actionlint clean. 39 API operations, no duplicates. Generated dinner read/write behavior and live API request shapes have regression tests.
+
+Verification (Phase 8): ruff check and format clean. Add-on/API pytest 338 passed; integration pytest 37 passed. Panel Vitest 23 passed. Panel and card production builds succeeded; `custom_components/menu_planner/www/menu-planner-cards.js` is 28.19 kB. `git diff --check` and Python syntax compilation pass. The tests cover bundle registration, stock preview, swap-by-item-IDs, and same-day swapping.
 
 ## Phase 0: Planning
 
@@ -44,7 +46,7 @@ Depends on: 0. Owner: coordinator (packaging: G).
 - [ ] Check: discovery works with no `hassio_api` (the docs say none is needed)
 - [ ] Check: Core reaches the internal port without `ports:`
 - [ ] Check: discovery lifecycle (re-send on start, removal on uninstall)
-- [ ] Check: card registration with `frontend.add_extra_js_url`, or the manual resource fallback
+- [x] Integration serves the card bundle and registers a versioned URL with `frontend.add_extra_js_url` (covered by an integration test)
 - [x] `docs/API.md`: frozen contract (endpoints, schemas, warning codes)
 - [x] Lint and tests: `ruff check`, `ruff format --check`, `pytest tests/addon` (9 passed)
 
@@ -116,24 +118,24 @@ Depends on: 1 (real data needs 3). Owner: D. Status: wave 1 (`custom_components/
 - [x] Websocket commands (`menu_planner/*`) and services (`log_eaten`, `set_stock`, `swap_today`)
 - [ ] Persistent notifications (create and dismiss by code and subject)
 - [ ] Shopping-list sync (deferred, PLAN 11)
-- [ ] Card bundle served and registered
+- [x] Card bundle served and registered automatically by the integration
 - [x] Integration tests (`tests/integration/`)
 
 ## Phase 8: Lovelace cards
 
 Depends on: 6 and 7. Owner: F.
 
-- [ ] Today's dinner card (log as eaten, swap)
-- [ ] Stock check card (yes/no, impact count)
-- [ ] Menu window card
-- [ ] Visual editors via `getConfigForm()`
-- [ ] EN and NL strings
+- [x] Today's dinner card (log as eaten, swap suggestions and apply by transient item IDs)
+- [x] Stock check card (yes/no, non-mutating impact preview before confirming no)
+- [x] Menu window card with expandable dinner components
+- [x] Visual editors via `getConfigForm()` and HA form selectors
+- [x] EN and NL strings
 
 ## Phase 9: Tests and CI
 
 Depends on: 3 to 8. Owner: G.
 
-- [~] CI and multi-arch workflows exist (amd64, aarch64, armv7); local workflow lint passes. GitHub execution and image publication remain unverified.
+- [~] CI and multi-arch workflows exist (amd64, aarch64, armv7); local workflow lint passes. CI now builds the Lovelace bundle. GitHub execution and image publication remain unverified.
 - [ ] Manual checklist (PLAN 13)
 
 ## Phase 10: Docs and release
@@ -168,3 +170,5 @@ Depends on: 9. Owner: G.
 | 2026-11-09 | Wave 2 decisions: keep 401 `{"detail": ...}`; make candidate loading read-only and persist only selected generated dinners in planner commits; align all panel API methods to real documented routes with no production stubs. |
 | 2026-11-09 | Implemented transient generated dinners with write-time materialization; swap suggestions are read-only and selected by item IDs. Added immediate nutrition retry endpoint and corrected rule-check, nutrition lookup, and import request shapes. Updated `docs/API.md`. |
 | 2026-11-09 | Wave 2 verification: ruff clean; add-on tests 336 passed; integration tests 33 passed; panel tests 20 passed and build succeeded; actionlint clean; 39 API operations with no duplicates. |
+| 2026-11-09 | Phase 8 implementation: added three Lit Lovelace cards, EN/NL labels, HA config editors, websocket data/actions, and Vite bundle build into the integration's `www` directory. Integration now serves and auto-registers the versioned card bundle. Added stock-preview websocket proxy and transient item-ID swap apply support. Allowed the today card to swap today's dinner until it is marked eaten, matching the planned UX. |
+| 2026-11-09 | Phase 8 verification: Ruff clean; add-on/API tests 338 passed; integration tests 37 passed; frontend tests 23 passed; panel and card builds succeeded (card bundle 28.19 kB). CI now builds the card bundle. Updated API, plan, README, and agent guidance. |

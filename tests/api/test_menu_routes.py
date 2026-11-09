@@ -187,6 +187,33 @@ def test_swap_suggestions_on_past_day_is_conflict(client: TestClient) -> None:
     assert response.status_code == 409
 
 
+def test_today_can_be_swapped_before_it_is_eaten(client: TestClient) -> None:
+    today = date.today().isoformat()
+    current = client.get("/api/menu/today")
+    assert current.status_code == 200
+    assert current.json()["dinner"] is not None
+
+    suggestions_response = client.get(f"/api/menu/{today}/swap")
+
+    assert suggestions_response.status_code == 200
+    suggestions = suggestions_response.json()
+    assert suggestions
+    item_ids = [item["id"] for item in suggestions[0]["items"]]
+    response = client.post(f"/api/menu/{today}/swap", json={"item_ids": item_ids})
+    assert response.status_code == 200
+    assert response.json()["status"] == "pinned"
+    assert [item["id"] for item in response.json()["dinner"]["items"]] == item_ids
+
+
+def test_today_cannot_be_swapped_after_it_is_eaten(client: TestClient) -> None:
+    today = date.today().isoformat()
+    assert client.get("/api/menu/today").status_code == 200
+    assert client.post(f"/api/menu/{today}/eaten").status_code == 200
+
+    assert client.get(f"/api/menu/{today}/swap").status_code == 409
+    assert client.post(f"/api/menu/{today}/swap", json={"dinner_id": 1}).status_code == 409
+
+
 def test_swap_sets_chosen_dinner_and_pins_it(client: TestClient) -> None:
     day = _planned_future_day(client)
     suggestion = client.get(f"/api/menu/{day}/swap").json()[0]

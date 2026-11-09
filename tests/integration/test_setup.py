@@ -2,16 +2,35 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
+from custom_components.menu_planner import async_setup
 from custom_components.menu_planner.const import DOMAIN
+from homeassistant.components import frontend
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 
 from .conftest import BASE, ENTRY_DATA, async_setup_entry_for_test, register_addon
+
+
+async def test_setup_registers_and_exposes_card_bundle(hass: HomeAssistant) -> None:
+    assert await async_setup_component(hass, "http", {})
+    hass.data[frontend.DATA_EXTRA_MODULE_URL] = set()
+    with (
+        patch.object(hass.http, "async_register_static_paths", new=AsyncMock()) as register_paths,
+        patch("custom_components.menu_planner.frontend.add_extra_js_url") as add_extra_js_url,
+    ):
+        assert await async_setup(hass, {})
+
+    paths = register_paths.call_args.args[0]
+    assert len(paths) == 1
+    assert paths[0].url_path == "/menu_planner/menu-planner-cards.js"
+    assert paths[0].path.endswith("custom_components/menu_planner/www/menu-planner-cards.js")
+    add_extra_js_url.assert_called_once_with(hass, "/menu_planner/menu-planner-cards.js?v=0.1.0")
 
 
 def _sync_calls(mocker: AiohttpClientMocker) -> list:

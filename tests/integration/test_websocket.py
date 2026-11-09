@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from custom_components.menu_planner import async_setup
 from homeassistant.core import HomeAssistant
+from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
@@ -98,6 +98,28 @@ async def test_stock_set_puts_and_returns_result(
     assert put_calls[0][2] == {"in_stock": True}
 
 
+async def test_stock_preview_posts_without_mutating(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, addon: AiohttpClientMocker
+) -> None:
+    await async_setup_entry_for_test(hass)
+
+    msg = await _ws(
+        hass,
+        hass_ws_client,
+        {"type": "menu_planner/stock/preview", "item_id": 3, "in_stock": False},
+    )
+
+    assert msg["success"] is True
+    assert msg["result"] == {"replaces_count": 2}
+    preview_calls = [
+        call
+        for call in addon.mock_calls
+        if call[0].upper() == "POST" and str(call[1]) == f"{BASE}/api/stock/3/preview"
+    ]
+    assert len(preview_calls) == 1
+    assert preview_calls[0][2] == {"in_stock": False}
+
+
 async def test_eaten_posts_to_date(
     hass: HomeAssistant, hass_ws_client: WebSocketGenerator, addon: AiohttpClientMocker
 ) -> None:
@@ -145,6 +167,52 @@ async def test_swap_apply_posts_dinner_id(
     assert swap_calls[0][2] == {"dinner_id": 9}
 
 
+async def test_swap_apply_posts_transient_item_ids(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, addon: AiohttpClientMocker
+) -> None:
+    await async_setup_entry_for_test(hass)
+
+    msg = await _ws(
+        hass,
+        hass_ws_client,
+        {"type": "menu_planner/swap/apply", "date": TODAY, "item_ids": [3, 5]},
+    )
+
+    assert msg["success"] is True
+    swap_calls = [
+        call
+        for call in addon.mock_calls
+        if call[0].upper() == "POST" and str(call[1]) == f"{BASE}/api/menu/{TODAY}/swap"
+    ]
+    assert len(swap_calls) == 1
+    assert swap_calls[0][2] == {"item_ids": [3, 5]}
+
+
+async def test_swap_apply_requires_exactly_one_target(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, addon: AiohttpClientMocker
+) -> None:
+    await async_setup_entry_for_test(hass)
+
+    msg = await _ws(
+        hass,
+        hass_ws_client,
+        {
+            "type": "menu_planner/swap/apply",
+            "date": TODAY,
+            "dinner_id": 9,
+            "item_ids": [3, 5],
+        },
+    )
+
+    assert msg["success"] is False
+    assert msg["error"]["code"] == "invalid_format"
+    assert not [
+        call
+        for call in addon.mock_calls
+        if call[0].upper() == "POST" and str(call[1]) == f"{BASE}/api/menu/{TODAY}/swap"
+    ]
+
+
 async def test_add_on_error_code_is_passed_through(
     hass: HomeAssistant,
     hass_ws_client: WebSocketGenerator,
@@ -170,7 +238,7 @@ async def test_add_on_error_code_is_passed_through(
 async def test_not_loaded_error_when_no_entry(
     hass: HomeAssistant, hass_ws_client: WebSocketGenerator
 ) -> None:
-    assert await async_setup(hass, {})
+    assert await async_setup_component(hass, "menu_planner", {})
 
     msg = await _ws(hass, hass_ws_client, {"type": "menu_planner/today"})
 

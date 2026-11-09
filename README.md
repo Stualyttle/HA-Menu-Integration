@@ -2,12 +2,13 @@
 
 A Home Assistant integration and add-on that plans healthy dinners for a rolling window of days, and tracks yes/no stock for each item.
 
-> **Status: pre-release (0.1.0).** The add-on and integration work end to end in tests. The Lovelace cards are not built yet (Phase 8). See [docs/WORKFILE.md](docs/WORKFILE.md) for progress.
+> **Status: pre-release (0.1.0).** The add-on, integration, and three Lovelace cards are implemented; live Home Assistant/Supervisor checks and release validation remain. See [docs/WORKFILE.md](docs/WORKFILE.md) for progress.
 
 ## What it does
 
 - **Add-on** (sidebar panel "Menu Planner"): register menu items, link them to categories, set black and white lists, tune the generator, and import or export data.
-- **Integration**: connects Home Assistant to the add-on and exposes sensors and services. Lovelace cards (planned) show today's menu and ask about stock.
+- **Integration**: connects Home Assistant to the add-on and exposes sensors, services, websocket commands, and the automatically registered Lovelace card bundle.
+- **Lovelace cards**: today's dinner with eaten/swap actions, stock checks with a non-mutating impact preview, and an expandable menu window.
 - **Planner**: generates dinners over a rolling window (7 to 60 days, default 14). Hard rules: blacklisted items, no items marked out of stock, and template counts. Soft rules: category minimums, repeat gap, whitelist, and balance. Details in [docs/PLAN.md](docs/PLAN.md) section 6.
 
 ## Supported hardware
@@ -60,15 +61,16 @@ python -m pytest -q tests/integration
 
 # Panel (Lit + Material Web)
 cd frontend/panel && npm ci && npm test && npm run build
+npm run build:cards
 ```
 
-The panel build writes to `addon/app/static/panel/`. Commit that output with the source change.
+The panel build writes to `addon/app/static/panel/`; the Lovelace card build writes to `custom_components/menu_planner/www/menu-planner-cards.js`. Commit both generated bundles with their source changes.
 
 ## Builds and CI
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| [`ci.yaml`](.github/workflows/ci.yaml) | push and pull request | Python, integration, panel, hassfest, and HACS checks |
+| [`ci.yaml`](.github/workflows/ci.yaml) | push and pull request | Python, integration, panel/card, hassfest, and HACS checks |
 | [`build-addon.yaml`](.github/workflows/build-addon.yaml) | push and pull request | Builds the add-on for `amd64`, `aarch64`, and `armv7` (QEMU for armv7). Pushes to GHCR on non-PR events |
 
 The version in `addon/config.yaml` sets the image tag. Release steps are in [.github/skills/addon-release/SKILL.md](.github/skills/addon-release/SKILL.md).

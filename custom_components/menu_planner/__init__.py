@@ -7,18 +7,22 @@ while no entry is loaded fail with ``not_loaded``.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Awaitable, Callable
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.components import websocket_api
+from homeassistant.components import frontend, websocket_api
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
 
 from .api import MenuPlannerClient, MenuPlannerError
@@ -27,6 +31,8 @@ from .const import (
     ATTR_DINNER_ID,
     ATTR_IN_STOCK,
     ATTR_ITEM,
+    CARD_BUNDLE_FILENAME,
+    CARD_BUNDLE_URL,
     CONF_HOST,
     CONF_PORT,
     CONF_TOKEN,
@@ -37,6 +43,8 @@ from .const import (
 )
 from .coordinator import MenuPlannerCoordinator, async_get_loaded_coordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 PLATFORMS = [Platform.SENSOR]
 
 type MenuPlannerConfigEntry = ConfigEntry[MenuPlannerCoordinator]
@@ -44,6 +52,7 @@ type MenuPlannerConfigEntry = ConfigEntry[MenuPlannerCoordinator]
 WS_WINDOW = "menu_planner/window"
 WS_TODAY = "menu_planner/today"
 WS_STOCK = "menu_planner/stock"
+WS_STOCK_PREVIEW = "menu_planner/stock/preview"
 WS_STOCK_SET = "menu_planner/stock/set"
 WS_EATEN = "menu_planner/eaten"
 WS_SWAP_SUGGESTIONS = "menu_planner/swap/suggestions"
@@ -62,6 +71,7 @@ SERVICE_SWAP_TODAY_SCHEMA = vol.Schema(
         vol.Optional(ATTR_DATE): cv.date,
     }
 )
+CARD_BUNDLE_PATH = Path(__file__).parent / "www" / CARD_BUNDLE_FILENAME
 
 
 def _day_or_today(value: date | None) -> date:
@@ -97,7 +107,7 @@ async def _async_handle_set_stock(call: ServiceCall) -> None:
 async def _async_handle_swap_today(call: ServiceCall) -> None:
     day = _day_or_today(call.data.get(ATTR_DATE))
     dinner_id = call.data[ATTR_DINNER_ID]
-    await _async_service(call, lambda client: client.apply_swap(day, dinner_id))
+    await _async_service(call, lambda client: client.apply_swap(day, dinner_id=dinner_id))
 
 
 async def _async_ws(
@@ -187,6 +197,25 @@ async def _ws_stock_set(
     )
 
 
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_STOCK_PREVIEW,
+        vol.Required("item_id"): cv.positive_int,
+        vol.Required("in_stock"): cv.boolean,
+    }
+)
+@websocket_api.async_response
+async def _ws_stock_preview(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    await _async_ws(
+        hass,
+        connection,
+        msg,
+        lambda client: client.preview_stock(msg["item_id"], msg["in_stock"]),
+    )
+
+
 @websocket_api.websocket_command({vol.Required("type"): WS_EATEN, vol.Required("date"): cv.date})
 @websocket_api.async_response
 async def _ws_eaten(
@@ -211,7 +240,8 @@ async def _ws_swap_suggestions(
     {
         vol.Required("type"): WS_SWAP_APPLY,
         vol.Required("date"): cv.date,
-        vol.Required("dinner_id"): cv.positive_int,
+        vol.Optional("dinner_id"): cv.positive_int,
+        vol.Optional("item_ids"): vol.All([cv.positive_int], vol.Length(min=1)),
     }
 )
 @websocket_api.async_response
@@ -219,18 +249,44 @@ async def _ws_swap_apply(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     day = msg["date"]
-    dinner_id = msg["dinner_id"]
+    dinner_id = msg.get("dinner_id")
+    item_ids = msg.get("item_ids")
+    if (dinner_id is None) == (item_ids is None):
+        connection.send_error(
+            msg["id"], "invalid_format", "Send exactly one of dinner_id or item_ids"
+        )
+        return
     await _async_ws(
         hass,
         connection,
         msg,
-        lambda c: c.apply_swap(day, dinner_id),
+        lambda c: c.apply_swap(day, dinner_id=dinner_id, item_ids=item_ids),
         refresh=True,
     )
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     """Register services and websocket commands once for the domain."""
+    if hass.http is None:
+        _LOGGER.warning("HTTP is unavailable; the Lovelace card bundle cannot be served")
+    else:
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    CARD_BUNDLE_URL,
+                    str(CARD_BUNDLE_PATH),
+                    cache_headers=True,
+                )
+            ]
+        )
+        if frontend.DATA_EXTRA_MODULE_URL in hass.data:
+            integration = await async_get_integration(hass, DOMAIN)
+            frontend.add_extra_js_url(hass, f"{CARD_BUNDLE_URL}?v={integration.version}")
+        else:
+            _LOGGER.warning(
+                "Home Assistant frontend is unavailable; Lovelace cards are not registered"
+            )
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_LOG_EATEN,
@@ -255,6 +311,7 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
         _ws_window,
         _ws_stock,
         _ws_stock_set,
+        _ws_stock_preview,
         _ws_eaten,
         _ws_swap_suggestions,
         _ws_swap_apply,

@@ -35,14 +35,14 @@ Status column: **Implemented** means the route exists in `addon/app/api/` and ha
 | POST | `/api/menu/replan` | Regenerate planned days (pinned, eaten, and past days are kept). Returns the window as a bare array | Implemented |
 | PUT | `/api/menu/{date}` | Body `{pinned: bool}` (exactly one of `pinned` or `dinner_id`). `pinned` pins or unpins (future days only). `dinner_id` applies a swap (see below) | Implemented |
 | POST | `/api/menu/{date}/eaten` | Mark eaten (never changes stock). Not allowed for future dates | Implemented |
-| GET | `/api/menu/{date}/swap` | Bare array of up to three `DinnerOut` suggestions that satisfy all hard rules. Future days in the window only | Implemented |
-| POST | `/api/menu/{date}/swap` | Body `{item_ids: [int, ...]}` for a suggestion, or `{dinner_id}` for a persisted dinner. Applies and persists only the selected dinner. Returns the day | Implemented |
+| GET | `/api/menu/{date}/swap` | Bare array of up to three `DinnerOut` suggestions that satisfy all hard rules. Today (until eaten) and future days in the window | Implemented |
+| POST | `/api/menu/{date}/swap` | Body `{item_ids: [int, ...]}` for a suggestion, or `{dinner_id}` for a persisted dinner. Applies and persists only the selected dinner. Today (until eaten) and future days in the window. Returns the day | Implemented |
 
 Day object (`MenuDayOut`): `{date, status: planned|pinned|eaten|empty, dinner: {id, items: [{id, name, type}]} | null, kcal, balance, replaced_reason}`. `kcal` is `null` when a component lacks verified nutrition. `balance` is `ok`, `off_target`, or `unknown`. Swap suggestions return the same dinner shape; `id` is `null` for a generated dinner that is not yet stored. Use its item IDs in the `item_ids` request body rather than treating that null ID as a database reference.
 
 Generated candidate dinners are transient while reading or checking rules. A planner write stores only the candidate dinners selected for the resulting plan. Fetching swap suggestions does not write candidates; applying a suggestion identifies it by its item IDs and persists it as part of the swap.
 
-Errors: a date outside the window or a past date in a swap or PUT returns 409 (`day_not_editable`). An eaten day cannot be pinned or changed. A dinner that fails hard rules returns 409 (`swap_rejected`).
+Errors: a date outside the window or a past date in a swap or PUT returns 409 (`day_not_editable`). An eaten day cannot be pinned or swapped. A dinner that fails hard rules returns 409 (`swap_rejected`).
 
 ## Items, categories, rules
 
@@ -113,4 +113,17 @@ Warning codes (stable):
 
 ## Integration contract (not HTTP)
 
-Websocket commands (`menu_planner/...`) and services (`menu_planner.log_eaten`, `menu_planner.set_stock`, `menu_planner.swap_today`) are defined in PLAN section 10 and implemented by agent D. They proxy to the add-on endpoints above and do not add behaviour.
+The integration serves the built Lovelace bundle at `/menu_planner/menu-planner-cards.js` and registers it with Home Assistant's frontend automatically. The cards use websocket commands; they do not call the add-on directly.
+
+| Websocket command | Request fields | Add-on operation |
+|---|---|---|
+| `menu_planner/today` | none | `GET /api/menu/today` |
+| `menu_planner/window` | optional `from`, `to` | `GET /api/menu` |
+| `menu_planner/stock` | optional `unanswered_first` (default `true`) | `GET /api/stock` |
+| `menu_planner/stock/set` | `item_id`, optional `in_stock` | `PUT /api/stock/{item_id}` |
+| `menu_planner/stock/preview` | `item_id`, `in_stock` | `POST /api/stock/{item_id}/preview` |
+| `menu_planner/eaten` | `date` | `POST /api/menu/{date}/eaten` |
+| `menu_planner/swap/suggestions` | `date` | `GET /api/menu/{date}/swap` |
+| `menu_planner/swap/apply` | `date` and exactly one of `dinner_id` or `item_ids` | `POST /api/menu/{date}/swap` |
+
+Services (`menu_planner.log_eaten`, `menu_planner.set_stock`, `menu_planner.swap_today`) remain available to automations. They proxy to the add-on and refresh the integration coordinator after writes.

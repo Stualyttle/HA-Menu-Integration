@@ -9,6 +9,6 @@
   "integration_type": "hub",
   "requirements": [],
   "dependencies": ["websocket_api"],
-  "after_dependencies": ["hassio", "shopping_list", "persistent_notification"],
+  "after_dependencies": ["frontend", "hassio", "shopping_list", "persistent_notification"],
   "version": "0.1.0"
 }

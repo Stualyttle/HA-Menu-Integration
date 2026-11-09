@@ -168,6 +168,16 @@ def _require_future_in_window(stores: Stores, day: date) -> None:
         raise DayNotEditableError(f"{day.isoformat()} cannot be edited")
 
 
+async def _require_swap_day(stores: Stores, day: date) -> None:
+    """Allow swapping today before it is eaten, or any future day in the window."""
+    today = local_today()
+    window_days = build_settings(stores).window_days
+    if not today <= day <= today + timedelta(days=window_days - 1):
+        raise DayNotEditableError(f"{day.isoformat()} cannot be edited")
+    if day == today and (await _stored_day(stores, day)).status == DayStatus.EATEN:
+        raise DayNotEditableError(f"{day.isoformat()} cannot be edited")
+
+
 async def _require_dinner_exists(stores: Stores, dinner_id: int) -> None:
     if not any(dinner.id == dinner_id for dinner in await stores.menu.list_dinners()):
         raise ApiError(400, "unknown_reference", f"unknown dinner: {dinner_id}")
@@ -185,8 +195,12 @@ async def _swap(
     *,
     dinner_id: int | None = None,
     item_ids: list[int] | None = None,
+    allow_today: bool = False,
 ) -> None:
-    _require_future_in_window(stores, day)
+    if allow_today:
+        await _require_swap_day(stores, day)
+    else:
+        _require_future_in_window(stores, day)
     planner = build_planner(stores)
     ctx = build_context(stores)
     if item_ids is not None:
@@ -237,7 +251,7 @@ async def replan(stores: StoresDep) -> list[MenuDayOut]:
 @router.get("/{day_text}/swap", response_model=list[DinnerOut])
 async def swap_suggestions(day_text: str, stores: StoresDep) -> list[DinnerOut]:
     day = _parse_date(day_text)
-    _require_future_in_window(stores, day)
+    await _require_swap_day(stores, day)
     planner = build_planner(stores)
     suggestions = await planner.suggest_swaps(build_context(stores), day)
     lookups = await _lookups(stores)
@@ -247,7 +261,14 @@ async def swap_suggestions(day_text: str, stores: StoresDep) -> list[DinnerOut]:
 @router.post("/{day_text}/swap", response_model=MenuDayOut)
 async def swap_day(day_text: str, body: SwapIn, stores: StoresDep) -> MenuDayOut:
     day = _parse_date(day_text)
-    await _swap(stores, day, now_utc(), dinner_id=body.dinner_id, item_ids=body.item_ids)
+    await _swap(
+        stores,
+        day,
+        now_utc(),
+        dinner_id=body.dinner_id,
+        item_ids=body.item_ids,
+        allow_today=True,
+    )
     return (await _days_out(stores, day, day))[0]
 
 
