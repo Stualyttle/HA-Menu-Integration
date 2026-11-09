@@ -239,7 +239,7 @@ Sensors **(proposal)**: `sensor.menu_planner_today_dinner`, `sensor.menu_planner
 
 ## 11. Integration details
 
-- `manifest.json`: domain `menu_planner`, name "Menu Planner", `config_flow: true`, `integration_type: hub` **(proposal)**, `iot_class: local_polling`, `codeowners`, `documentation`, `issue_tracker`, `dependencies: ["frontend", "http", "websocket_api"]` (verify with hassfest), `version`.
+- `manifest.json`: domain `menu_planner`, name "Menu Planner", `config_flow: true`, `integration_type: hub` **(proposal)**, `iot_class: local_polling`, `codeowners`, `documentation`, `issue_tracker`, required dependency `websocket_api`, and after-dependencies `frontend` and `http`, `version`.
 - Shopping list: call `shopping_list.add_item` and `shopping_list.remove_item` only when the service exists (`hass.services.has_service`).
 - Coordinator: polls the add-on every 60 seconds and after each action. Each sync sends the HA language and time zone.
 - Notifications: `persistent_notification.create` and `dismiss`, keyed by warning code and subject.
@@ -317,7 +317,7 @@ Rules: each agent edits only the files it owns. API changes go through `docs/API
 7. kcal is shown only when all components are verified.
 8. Balance does not rank without portion weights.
 9. Discovery is re-sent on each start, and the token persists in `/data`.
-10. The integration type is `hub`, with dependencies `frontend`, `http`, and `websocket_api`.
+10. The integration type is `hub`; `websocket_api` is required, while `frontend` and `http` are after-dependencies used for the optional Lovelace bundle.
 11. The add-on learns language and time zone from the integration's sync (`TZ` as fallback).
 12. Starter minimums (fish at least 1, vegetarian at least 2 per 7 days) are editable defaults.
 

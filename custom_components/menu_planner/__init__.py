@@ -46,6 +46,7 @@ from .coordinator import MenuPlannerCoordinator, async_get_loaded_coordinator
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR]
+CONFIG_SCHEMA = cv.empty_config_schema(DOMAIN)
 
 type MenuPlannerConfigEntry = ConfigEntry[MenuPlannerCoordinator]
 
