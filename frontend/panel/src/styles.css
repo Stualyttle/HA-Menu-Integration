@@ -96,6 +96,12 @@ table.plain th { font-weight: 500; color: var(--secondary-text-color); font-size
 .loading { display: flex; align-items: center; gap: 12px; color: var(--secondary-text-color); padding: 24px 0; }
 
 md-dialog.item-dialog { --md-dialog-container-max-width: min(640px, 100vw - 48px); }
+md-dialog.confirm-dialog { --md-dialog-container-max-width: min(420px, 100vw - 32px); }
+.confirm-dialog p { margin: 0; }
+.confirm-danger {
+  --md-filled-button-container-color: var(--error-color, #b3261e);
+  --md-filled-button-label-text-color: #fff;
+}
 .dialog-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; max-height: 65vh; overflow: auto; }
 .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

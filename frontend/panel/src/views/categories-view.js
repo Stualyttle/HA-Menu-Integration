@@ -2,7 +2,16 @@
  * Categories tab: categories with their minimum number of dinners per 7 days.
  * Minimums are saved per row; the list reloads when items change (version bump).
  */
-import { MpView, html, icon, listOf, reportError, toast, t } from '../../../shared/components/common.js';
+import {
+  MpView,
+  confirmAction,
+  html,
+  icon,
+  listOf,
+  reportError,
+  toast,
+  t,
+} from '../../../shared/components/common.js';
 import { api } from '../../../shared/api/instance.js';
 
 export class MpCategoriesView extends MpView {
@@ -57,7 +66,7 @@ export class MpCategoriesView extends MpView {
   }
 
   async remove(category) {
-    if (!window.confirm(t('categories.confirmDelete'))) return;
+    if (!(await confirmAction(this, t('categories.confirmDelete')))) return;
     try {
       await api.categories.remove(category.id);
       toast(this, t('categories.deleted'));

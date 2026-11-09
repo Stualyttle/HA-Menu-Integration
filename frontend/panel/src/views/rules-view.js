@@ -2,7 +2,16 @@
  * Rules tab: blacklist and whitelist cards plus a combination builder.
  * The builder runs a feasibility check (no save) as categories are picked.
  */
-import { MpView, html, icon, listOf, reportError, toast, t } from '../../../shared/components/common.js';
+import {
+  MpView,
+  confirmAction,
+  html,
+  icon,
+  listOf,
+  reportError,
+  toast,
+  t,
+} from '../../../shared/components/common.js';
 import { api } from '../../../shared/api/instance.js';
 
 export class MpRulesView extends MpView {
@@ -117,7 +126,7 @@ export class MpRulesView extends MpView {
   }
 
   async remove(rule) {
-    if (!window.confirm(t('rules.confirmDelete'))) return;
+    if (!(await confirmAction(this, t('rules.confirmDelete')))) return;
     try {
       await api.rules.remove(rule.id);
       toast(this, t('rules.deleted'));

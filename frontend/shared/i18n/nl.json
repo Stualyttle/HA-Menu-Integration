@@ -16,6 +16,7 @@
 
   "common.save": "Opslaan",
   "common.cancel": "Annuleren",
+  "common.confirmDelete": "Verwijdering bevestigen",
   "common.delete": "Verwijderen",
   "common.close": "Sluiten",
   "common.add": "Toevoegen",

@@ -45,6 +45,7 @@ export class MpApp extends MpView {
     dialogOpen: { state: true },
     editItemId: { state: true },
     itemsVersion: { state: true },
+    confirmation: { state: true },
   };
 
   constructor() {
@@ -54,6 +55,7 @@ export class MpApp extends MpView {
     this.tab = 'menu';
     this.toasts = [];
     this.dialogOpen = false;
+    this.confirmation = null;
     /** null means a new item; a string id means edit that item. */
     this.editItemId = null;
     /** Bumped after an item changes so list views reload. */
@@ -65,6 +67,7 @@ export class MpApp extends MpView {
     this.addEventListener('mp-toast', this.onToast);
     this.addEventListener('mp-edit-item', this.onEditItem);
     this.addEventListener('mp-items-changed', this.onItemsChanged);
+    this.addEventListener('mp-confirm', this.onConfirmRequest);
     window.addEventListener('hashchange', this.onHashChange);
     this.onHashChange();
     this.load();
@@ -74,6 +77,7 @@ export class MpApp extends MpView {
     this.removeEventListener('mp-toast', this.onToast);
     this.removeEventListener('mp-edit-item', this.onEditItem);
     this.removeEventListener('mp-items-changed', this.onItemsChanged);
+    this.removeEventListener('mp-confirm', this.onConfirmRequest);
     window.removeEventListener('hashchange', this.onHashChange);
     super.disconnectedCallback();
   }
@@ -121,6 +125,25 @@ export class MpApp extends MpView {
   onItemsChanged = () => {
     this.itemsVersion += 1;
   };
+
+  onConfirmRequest = (event) => {
+    event.stopPropagation();
+    const request = event.detail;
+    if (typeof request?.resolve !== 'function') return;
+    if (this.confirmation) {
+      request.resolve(false);
+      return;
+    }
+    this.confirmation = request;
+  };
+
+  finishConfirmation(confirmed) {
+    const dialog = this.querySelector('md-dialog.confirm-dialog');
+    if (dialog?.open) dialog.close();
+    const resolve = this.confirmation?.resolve;
+    this.confirmation = null;
+    resolve?.(confirmed);
+  }
 
   onDialogClosed() {
     this.dialogOpen = false;
@@ -204,6 +227,23 @@ export class MpApp extends MpView {
         .itemId=${this.editItemId}
         @closed=${() => this.onDialogClosed()}
       ></mp-item-dialog>
+      ${this.confirmation
+        ? html`<md-dialog
+            class="confirm-dialog"
+            aria-label=${t('common.confirmDelete')}
+            open
+            @closed=${() => this.finishConfirmation(false)}
+          >
+            <div slot="headline">${t('common.confirmDelete')}</div>
+            <div slot="content"><p>${this.confirmation.message}</p></div>
+            <div slot="actions" class="row">
+              <md-text-button @click=${() => this.finishConfirmation(false)}>${t('common.cancel')}</md-text-button>
+              <md-filled-button class="confirm-danger" @click=${() => this.finishConfirmation(true)}>
+                ${t('common.delete')}
+              </md-filled-button>
+            </div>
+          </md-dialog>`
+        : nothing}
       ${this.toasts.length ? this.renderToasts() : nothing}
     `;
   }

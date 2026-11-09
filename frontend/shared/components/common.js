@@ -57,4 +57,17 @@ export function editItem(host, id = null) {
   host.dispatchEvent(new CustomEvent('mp-edit-item', { detail: { id }, bubbles: true, composed: true }));
 }
 
+/** Requests a localized confirmation from the app shell. */
+export function confirmAction(host, message) {
+  return new Promise((resolve) => {
+    host.dispatchEvent(
+      new CustomEvent('mp-confirm', {
+        detail: { message, resolve },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  });
+}
+
 export { html, t };

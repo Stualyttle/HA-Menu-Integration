@@ -6,7 +6,7 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-09 (ingress panel serving implemented)
+Last updated: 2026-11-09 (panel confirmation dialogs built and tested)
 
 ## Status
 
@@ -109,6 +109,7 @@ Depends on: 1. Owner: E. Status: code and Vitest done (`5e39391`); browser behav
 - [x] Align panel API calls with implemented backend routes. Replan and retry lookups use real endpoints; rule-check, nutrition lookup, and import payloads match the contract.
 - [x] Bundle rebuilt (`addon/app/static/panel/`). Grep for external URLs: pending.
 - [x] Serve the built panel and assets from the unauthenticated Ingress listener; keep the internal token-protected listener API-only.
+- [x] Use a localized Material dialog for item, category, and rule deletion; tab navigation does not request confirmation.
 
 ## Phase 7: Integration
 
@@ -136,7 +137,7 @@ Depends on: 6 and 7. Owner: F.
 
 Depends on: 3 to 8. Owner: G.
 
-- [~] CI and multi-arch workflows exist (amd64, aarch64, armv7); local workflow lint passes. CI now builds the Lovelace bundle. GitHub execution and image publication remain unverified.
+- [~] CI and multi-arch workflows exist (amd64, aarch64, armv7); local workflow lint passes. CI now builds the Lovelace bundle. GitHub execution and image publication remain unverified. GitHub repository description and topics are now set; rerun HACS validation to confirm.
 - [ ] Manual checklist (PLAN 13)
 
 ## Phase 10: Docs and release
@@ -176,3 +177,5 @@ Depends on: 9. Owner: G.
 | 2026-11-09 | Fixed the GitHub hassfest failure: added `http` as an after-dependency and declared the empty YAML config schema. Updated the plan's dependency description to match the manifest. |
 | 2026-11-09 | Fixed the follow-up Hassfest failure by sorting manifest keys after `domain` and `name`. Local key-order and JSON checks pass; Hassfest could not be rerun because the Docker daemon is unavailable. |
 | 2026-11-09 | Mounted the built panel index and assets on the ingress app, leaving the internal listener API-only. Added route, asset, API-404, and internal-listener regression tests. |
+| 2026-11-09 | Replaced browser-native delete prompts with one localized Material confirmation dialog shared by item, category, and rule deletion. It is only requested by delete actions, not tab navigation. Rebuilt the panel bundle; 24 frontend tests pass. |
+| 2026-11-09 | Verified the public GitHub repository description and topics are now set after the HACS workflow reported them missing; the failed run may predate the metadata change. |

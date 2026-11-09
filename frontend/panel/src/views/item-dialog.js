@@ -5,7 +5,18 @@
  * md-dialog fires `closed` on itself without bubbling, so this element
  * re-dispatches it on the host for the app shell to listen to.
  */
-import { MpView, html, icon, listOf, reportError, toast, itemsChanged, typeLabel, t } from '../../../shared/components/common.js';
+import {
+  MpView,
+  confirmAction,
+  html,
+  icon,
+  itemsChanged,
+  listOf,
+  reportError,
+  toast,
+  typeLabel,
+  t,
+} from '../../../shared/components/common.js';
 import { api } from '../../../shared/api/instance.js';
 
 const TYPES = ['protein', 'vegetable', 'carb'];
@@ -197,7 +208,7 @@ export class MpItemDialog extends MpView {
   }
 
   async remove() {
-    if (!this.itemId || !window.confirm(t('item.confirmDelete'))) return;
+    if (!this.itemId || !(await confirmAction(this, t('item.confirmDelete')))) return;
     this.busy = 'delete';
     try {
       await api.items.remove(this.itemId);

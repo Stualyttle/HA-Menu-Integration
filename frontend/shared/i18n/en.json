@@ -16,6 +16,7 @@
 
   "common.save": "Save",
   "common.cancel": "Cancel",
+  "common.confirmDelete": "Confirm deletion",
   "common.delete": "Delete",
   "common.close": "Close",
   "common.add": "Add",
