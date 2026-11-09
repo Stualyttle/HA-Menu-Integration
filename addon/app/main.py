@@ -7,7 +7,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api import DATA_ROUTERS
 from app.api.errors import install_error_handlers
@@ -72,6 +73,18 @@ def create_app(
 
     for router in DATA_ROUTERS:
         app.include_router(router, dependencies=[Depends(check_token)])
+
+    if not require_token:
+        panel_dir = Path(__file__).parent / "static" / "panel"
+        app.mount(
+            "/assets",
+            StaticFiles(directory=panel_dir / "assets"),
+            name="panel-assets",
+        )
+
+        @app.get("/", include_in_schema=False)
+        async def panel_index() -> FileResponse:
+            return FileResponse(panel_dir / "index.html")
 
     return app
 

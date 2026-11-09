@@ -6,7 +6,7 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-09 (manifest key ordering corrected after Hassfest rerun)
+Last updated: 2026-11-09 (ingress panel serving implemented)
 
 ## Status
 
@@ -108,6 +108,7 @@ Depends on: 1. Owner: E. Status: code and Vitest done (`5e39391`); browser behav
 - [ ] Browser check.
 - [x] Align panel API calls with implemented backend routes. Replan and retry lookups use real endpoints; rule-check, nutrition lookup, and import payloads match the contract.
 - [x] Bundle rebuilt (`addon/app/static/panel/`). Grep for external URLs: pending.
+- [x] Serve the built panel and assets from the unauthenticated Ingress listener; keep the internal token-protected listener API-only.
 
 ## Phase 7: Integration
 
@@ -174,3 +175,4 @@ Depends on: 9. Owner: G.
 | 2026-11-09 | Phase 8 verification: Ruff clean; add-on/API tests 338 passed; integration tests 37 passed; frontend tests 23 passed; panel and card builds succeeded (card bundle 28.19 kB). CI now builds the card bundle. Updated API, plan, README, and agent guidance. |
 | 2026-11-09 | Fixed the GitHub hassfest failure: added `http` as an after-dependency and declared the empty YAML config schema. Updated the plan's dependency description to match the manifest. |
 | 2026-11-09 | Fixed the follow-up Hassfest failure by sorting manifest keys after `domain` and `name`. Local key-order and JSON checks pass; Hassfest could not be rerun because the Docker daemon is unavailable. |
+| 2026-11-09 | Mounted the built panel index and assets on the ingress app, leaving the internal listener API-only. Added route, asset, API-404, and internal-listener regression tests. |
