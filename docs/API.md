@@ -17,7 +17,7 @@ Frozen interface between the add-on, the integration, and the frontend. Parallel
 - List endpoints return a bare JSON array, not a wrapper object.
 - Language: responses carry no UI text except `message`. Warning and status codes are stable identifiers, translated by the client.
 
-Status column: **Implemented** means the route exists in `addon/app/api/` and has tests. **Planned** means the route is not implemented yet. The panel (`frontend/shared/api/client.js`) calls some planned routes, so those calls fail until they land.
+Status column: **Implemented** means the route exists in `addon/app/api/` and has tests. The panel (`frontend/shared/api/client.js`) uses these same routes; it does not substitute local mock results.
 
 ## Health and sync
 
@@ -36,9 +36,11 @@ Status column: **Implemented** means the route exists in `addon/app/api/` and ha
 | PUT | `/api/menu/{date}` | Body `{pinned: bool}` (exactly one of `pinned` or `dinner_id`). `pinned` pins or unpins (future days only). `dinner_id` applies a swap (see below) | Implemented |
 | POST | `/api/menu/{date}/eaten` | Mark eaten (never changes stock). Not allowed for future dates | Implemented |
 | GET | `/api/menu/{date}/swap` | Bare array of up to three `DinnerOut` suggestions that satisfy all hard rules. Future days in the window only | Implemented |
-| POST | `/api/menu/{date}/swap` | Body `{dinner_id}`. Applies a suggestion. Returns the day | Implemented |
+| POST | `/api/menu/{date}/swap` | Body `{item_ids: [int, ...]}` for a suggestion, or `{dinner_id}` for a persisted dinner. Applies and persists only the selected dinner. Returns the day | Implemented |
 
-Day object (`MenuDayOut`): `{date, status: planned|pinned|eaten|empty, dinner: {id, items: [{id, name, type}]} | null, kcal, balance, replaced_reason}`. `kcal` is `null` when a component lacks verified nutrition. `balance` is `ok`, `off_target`, or `unknown`.
+Day object (`MenuDayOut`): `{date, status: planned|pinned|eaten|empty, dinner: {id, items: [{id, name, type}]} | null, kcal, balance, replaced_reason}`. `kcal` is `null` when a component lacks verified nutrition. `balance` is `ok`, `off_target`, or `unknown`. Swap suggestions return the same dinner shape; `id` is `null` for a generated dinner that is not yet stored. Use its item IDs in the `item_ids` request body rather than treating that null ID as a database reference.
+
+Generated candidate dinners are transient while reading or checking rules. A planner write stores only the candidate dinners selected for the resulting plan. Fetching swap suggestions does not write candidates; applying a suggestion identifies it by its item IDs and persists it as part of the swap.
 
 Errors: a date outside the window or a past date in a swap or PUT returns 409 (`day_not_editable`). An eaten day cannot be pinned or changed. A dinner that fails hard rules returns 409 (`swap_rejected`).
 
@@ -50,6 +52,7 @@ Errors: a date outside the window or a past date in a swap or PUT returns 409 (`
 | GET / PUT / DELETE | `/api/items/{id}` | Read / update / delete | Implemented |
 | GET | `/api/items/{id}/nutrition/lookup` | Open Food Facts and USDA lookup (synchronous). Returns `{item_id, candidates: [{source, external_id, matched_name, score, kcal, protein_g, carbs_g, fat_g, fiber_g}], failed_sources: [source]}` | Implemented |
 | PUT | `/api/items/{id}/nutrition` | Body `{source: manual|open_food_facts|usda, external_id?, matched_name?, kcal?, protein_g?, carbs_g?, fat_g?, fiber_g?}`. Manual entry or confirm a candidate. Returns `NutritionOut` | Implemented |
+| POST | `/api/items/nutrition/retry` | Immediately retries lookup for every item with an open `nutrition_failed` warning. Returns `{retried_item_ids}` | Implemented |
 | GET / POST | `/api/categories` | List / create (`CategoryIn`: `name`, `min_per_7_days` 0–7, `item_ids`) | Implemented |
 | GET / PUT / DELETE | `/api/categories/{id}` | Read / update / delete | Implemented |
 | GET / POST | `/api/rules` | List / create (`RuleIn`: `kind: blacklist|whitelist`, `scope: combination|item`, `category_ids`, `item_id`, `enabled`) | Implemented |

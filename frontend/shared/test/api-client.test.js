@@ -51,10 +51,13 @@ describe('createApiClient', () => {
 
     await api.menu.eaten('2026-11-04');
     await api.stock.set('a/b', false);
+    await api.menu.swap('2026-11-04', [1, 10, 20]);
 
     expect(fetchImpl.mock.calls[0][0]).toBe('api/menu/2026-11-04/eaten');
     expect(fetchImpl.mock.calls[1][0]).toBe('api/stock/a%2Fb');
     expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({ in_stock: false });
+    expect(fetchImpl.mock.calls[2][0]).toBe('api/menu/2026-11-04/swap');
+    expect(JSON.parse(fetchImpl.mock.calls[2][1].body)).toEqual({ item_ids: [1, 10, 20] });
   });
 
   it('maps the server error envelope to ApiError with code and details', async () => {
@@ -116,15 +119,35 @@ describe('createApiClient', () => {
     expect(error.message).toBe('invalid or missing token');
   });
 
-  it('stubs routes missing from docs/API.md without sending a request', async () => {
+  it('sends panel operations to their implemented API routes with documented bodies', async () => {
     const fetchImpl = vi.fn(async () => jsonResponse(200, {}));
     const client = createApiClient({ fetchImpl });
-    for (const call of [client.menu.replan(), client.settings.retryLookups()]) {
-      const error = await call.catch((e) => e);
-      expect(error).toBeInstanceOf(ApiError);
-      expect(error.status).toBe(501);
-      expect(error.code).toBe('not_implemented');
-    }
-    expect(fetchImpl).not.toHaveBeenCalled();
+    const rule = { kind: 'blacklist', scope: 'combination', category_ids: [2, 3], enabled: true };
+    const document = { schema_version: 1, items: [] };
+
+    await client.menu.replan();
+    await client.items.lookupNutrition(4);
+    await client.rules.check(rule, 12);
+    await client.settings.retryLookups();
+    await client.exportData();
+    await client.importPreview(document);
+    await client.importData(document, { include_settings: true, include_history: false });
+
+    expect(fetchImpl.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
+      ['api/menu/replan', 'POST'],
+      ['api/items/4/nutrition/lookup', 'GET'],
+      ['api/rules/check', 'POST'],
+      ['api/items/nutrition/retry', 'POST'],
+      ['api/export', 'GET'],
+      ['api/import/preview', 'POST'],
+      ['api/import', 'POST'],
+    ]);
+    expect(JSON.parse(fetchImpl.mock.calls[2][1].body)).toEqual({ rule, rule_id: 12 });
+    expect(JSON.parse(fetchImpl.mock.calls[5][1].body)).toEqual(document);
+    expect(JSON.parse(fetchImpl.mock.calls[6][1].body)).toEqual({
+      document,
+      include_settings: true,
+      include_history: false,
+    });
   });
 });

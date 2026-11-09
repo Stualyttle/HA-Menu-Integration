@@ -79,7 +79,10 @@ export class MpRulesView extends MpView {
       const result = await api.rules.check(this.bodyFor(kind, ids));
       if (seq === this.checkSeq) this.check = result;
     } catch (err) {
-      if (seq === this.checkSeq) this.check = { feasible: true, error: err };
+      if (seq === this.checkSeq) {
+        this.check = { feasible: false, error: true };
+        reportError(this, err);
+      }
     }
   }
 
@@ -164,13 +167,15 @@ export class MpRulesView extends MpView {
       <div class="page-head">
         <h2>${t('rules.title')}</h2>
       </div>
-      ${this.blocked
-        ? html`<div class="banner error" role="alert">
+      ${this.check?.error
+        ? html`<div class="banner error" role="alert">${t('error.generic')}</div>`
+        : this.blocked
+          ? html`<div class="banner error" role="alert">
             <strong>${t('rules.infeasibleTitle')}</strong>
             <span>${t('rules.infeasibleBody')}</span>
             <span>${t('rules.infeasibleSave', { days: this.check.affected_days ?? 0 })}</span>
           </div>`
-        : ''}
+          : ''}
       <div class="grid-2">
         ${this.renderCard('blacklist')} ${this.renderCard('whitelist')}
       </div>

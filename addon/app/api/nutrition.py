@@ -104,6 +104,10 @@ class NutritionOut(BaseModel):
         )
 
 
+class RetryOut(BaseModel):
+    retried_item_ids: list[int]
+
+
 @asynccontextmanager
 async def _http_client(request: Request) -> AsyncIterator[httpx.AsyncClient]:
     """Uses an injected client when the app provides one (tests), else a short-lived client."""
@@ -121,6 +125,18 @@ def _sources(http: httpx.AsyncClient, stores: Stores) -> list:
         OpenFoodFactsClient(http),
         UsdaClient(http, api_key=lambda: stores.settings.get_value(USDA_KEY_SETTING)),
     ]
+
+
+def _service(http: httpx.AsyncClient, stores: Stores) -> NutritionService:
+    return NutritionService(stores.items, stores.nutrition, stores.warnings, _sources(http, stores))
+
+
+@router.post("/nutrition/retry", response_model=RetryOut)
+async def retry_failed_lookups(request: Request, stores: StoresDep) -> RetryOut:
+    """Immediately retry every item with an open nutrition lookup failure."""
+    async with _http_client(request) as http:
+        item_ids = await _service(http, stores).retry_failed_lookups()
+    return RetryOut(retried_item_ids=item_ids)
 
 
 @router.get("/{item_id}/nutrition/lookup", response_model=LookupOut)
@@ -166,12 +182,7 @@ async def put_nutrition(
     """Stores manual values, or confirms a candidate picked from the lookup."""
     await require_item(stores, item_id)
     async with _http_client(request) as http:
-        service = NutritionService(
-            stores.items,
-            stores.nutrition,
-            stores.warnings,
-            _sources(http, stores),
-        )
+        service = _service(http, stores)
         try:
             if body.source == "manual":
                 record = await service.set_manual(

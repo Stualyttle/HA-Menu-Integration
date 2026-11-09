@@ -18,6 +18,7 @@ from app.domain.engine import (
     window_bounds,
     with_stock,
 )
+from app.domain.errors import SwapRejectedError
 from app.domain.feasibility import RuleCheck, check_rules
 from app.domain.snapshot import PlanSnapshot
 from app.models import Dinner, Rule, WarningCode, WarningRecord, WarningSubject
@@ -89,16 +90,15 @@ class MenuPlanner:
         return await self._with_candidates(snapshot, ctx)
 
     async def _with_candidates(self, snapshot: PlanSnapshot, ctx: PlanContext) -> PlanSnapshot:
-        """Add generated item-sets as dinners, persisting only the ones not stored yet."""
+        """Add generated item-sets as transient dinners without writing to the repository."""
         generated = generate_candidates(snapshot, ctx, seed=f"candidates-{ctx.revision}")
         known = {dinner.item_ids for dinner in snapshot.dinners.values()}
         missing = [item_ids for item_ids in generated if item_ids not in known]
         if not missing:
             return snapshot
-        new_ids = await self.menu.ensure_dinners(missing)
         added = {
-            dinner_id: Dinner(id=dinner_id, item_ids=item_ids)
-            for dinner_id, item_ids in zip(new_ids, missing, strict=True)
+            -(index + 1): Dinner(id=-(index + 1), item_ids=item_ids)
+            for index, item_ids in enumerate(missing)
         }
         return replace(snapshot, dinners={**snapshot.dinners, **added})
 
@@ -130,6 +130,19 @@ class MenuPlanner:
         snapshot = await self.load(ctx)
         return await self._commit(ctx, snapshot, apply_swap(snapshot, ctx, day, dinner_id), now)
 
+    async def swap_items(
+        self, ctx: PlanContext, day: date, item_ids: list[int], now: datetime
+    ) -> PlanResult:
+        """Swap to a generated dinner identified by its item set, without requiring a stored ID."""
+        snapshot = await self.load(ctx)
+        wanted = tuple(sorted(set(item_ids)))
+        dinner = next(
+            (entry for entry in snapshot.dinners.values() if entry.item_ids == wanted), None
+        )
+        if dinner is None:
+            raise SwapRejectedError("unknown_dinner")
+        return await self._commit(ctx, snapshot, apply_swap(snapshot, ctx, day, dinner.id), now)
+
     async def check_rules(self, ctx: PlanContext, proposed: list[Rule] | None = None) -> RuleCheck:
         """Feasibility of `proposed` rules (or the stored set when None). Run before saving."""
         snapshot = await self.load(ctx, proposed)
@@ -142,10 +155,40 @@ class MenuPlanner:
         result: PlanResult,
         now: datetime,
     ) -> PlanResult:
+        transient_ids = {
+            day.dinner_id
+            for day in result.updated.values()
+            if day.dinner_id is not None and day.dinner_id < 0
+        }
+        persisted_dinners: dict[int, Dinner] = {}
+        if transient_ids:
+            transient_item_sets = [
+                snapshot.dinners[dinner_id].item_ids for dinner_id in sorted(transient_ids)
+            ]
+            persisted_ids = await self.menu.ensure_dinners(transient_item_sets)
+            id_map = dict(zip(sorted(transient_ids), persisted_ids, strict=True))
+            persisted_dinners = {
+                id_map[transient_id]: Dinner(
+                    id=id_map[transient_id],
+                    item_ids=snapshot.dinners[transient_id].item_ids,
+                )
+                for transient_id in transient_ids
+            }
+            result = PlanResult(
+                updated={
+                    day: replace(record, dinner_id=id_map.get(record.dinner_id, record.dinner_id))
+                    for day, record in result.updated.items()
+                },
+                warnings=result.warnings,
+            )
         if result.updated:
             days = [replace(day, updated_at=now) for day in result.updated.values()]
             await self.menu.save_days(days)
-        merged = replace(snapshot, days={**snapshot.days, **result.updated})
+        merged = replace(
+            snapshot,
+            dinners={**snapshot.dinners, **persisted_dinners},
+            days={**snapshot.days, **result.updated},
+        )
         feasibility = check_rules(merged, ctx)
         await self._sync_warnings([*result.warnings, *feasibility.warnings], now)
         return result

@@ -80,7 +80,7 @@ def _dinner_out(dinner: Dinner, lookups: _Lookups) -> DinnerOut:
         for item_id in dinner.item_ids
         if (item := lookups.items.get(item_id)) is not None
     ]
-    return DinnerOut(id=dinner.id, items=items)
+    return DinnerOut(id=dinner.id if dinner.id > 0 else None, items=items)
 
 
 def _kcal(dinner: Dinner, lookups: _Lookups) -> float | None:
@@ -178,11 +178,24 @@ async def _stored_day(stores: Stores, day: date) -> MenuDay:
     return found[0] if found else MenuDay(day=day, dinner_id=None, status=DayStatus.EMPTY)
 
 
-async def _swap(stores: Stores, day: date, dinner_id: int, now: datetime) -> None:
-    await _require_dinner_exists(stores, dinner_id)
+async def _swap(
+    stores: Stores,
+    day: date,
+    now: datetime,
+    *,
+    dinner_id: int | None = None,
+    item_ids: list[int] | None = None,
+) -> None:
     _require_future_in_window(stores, day)
     planner = build_planner(stores)
-    await planner.swap(build_context(stores), day, dinner_id, now)
+    ctx = build_context(stores)
+    if item_ids is not None:
+        await planner.swap_items(ctx, day, item_ids, now)
+        return
+    if dinner_id is None:
+        raise ApiError(400, "validation_error", "a dinner target is required")
+    await _require_dinner_exists(stores, dinner_id)
+    await planner.swap(ctx, day, dinner_id, now)
 
 
 @router.get("", response_model=list[MenuDayOut])
@@ -234,7 +247,7 @@ async def swap_suggestions(day_text: str, stores: StoresDep) -> list[DinnerOut]:
 @router.post("/{day_text}/swap", response_model=MenuDayOut)
 async def swap_day(day_text: str, body: SwapIn, stores: StoresDep) -> MenuDayOut:
     day = _parse_date(day_text)
-    await _swap(stores, day, body.dinner_id, now_utc())
+    await _swap(stores, day, now_utc(), dinner_id=body.dinner_id, item_ids=body.item_ids)
     return (await _days_out(stores, day, day))[0]
 
 
@@ -245,7 +258,7 @@ async def update_day(day_text: str, body: MenuUpdateIn, stores: StoresDep) -> Me
         raise ApiError(400, "validation_error", "send exactly one of 'pinned' or 'dinner_id'")
     now = now_utc()
     if body.dinner_id is not None:
-        await _swap(stores, day, body.dinner_id, now)
+        await _swap(stores, day, now, dinner_id=body.dinner_id)
         return (await _days_out(stores, day, day))[0]
 
     _require_future_in_window(stores, day)

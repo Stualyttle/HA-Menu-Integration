@@ -99,9 +99,10 @@ export class MpMenuView extends MpView {
     }
   }
 
-  chooseSuggestion(day, dinnerId) {
+  chooseSuggestion(day, dinner) {
     this.suggestFor = null;
-    return this.mutate(day.date, () => api.menu.swap(day.date, dinnerId), t('menu.updated'));
+    const itemIds = (dinner.items ?? []).map((item) => item.id);
+    return this.mutate(day.date, () => api.menu.swap(day.date, itemIds), t('menu.updated'));
   }
 
   async resolveWarning(warning) {
@@ -169,7 +170,7 @@ export class MpMenuView extends MpView {
         (dinner) => html`<div class="row">
           <span class="grow">${(dinner.items ?? []).map((i) => i.name).join(', ')}</span>
           ${dinner.kcal != null ? html`<span class="muted">${t('menu.kcal', { kcal: dinner.kcal })}</span>` : ''}
-          <md-outlined-button @click=${() => this.chooseSuggestion(day, dinner.id)}>
+          <md-outlined-button @click=${() => this.chooseSuggestion(day, dinner)}>
             ${t('menu.useDinner')}
           </md-outlined-button>
         </div>`,

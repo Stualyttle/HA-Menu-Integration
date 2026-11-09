@@ -75,6 +75,23 @@ def test_search_without_minimums_is_trivially_feasible():
     assert not result.exhausted
 
 
+async def test_replan_persists_only_candidates_selected_for_the_plan():
+    store = standard_household()
+    store.dinners.clear()
+    ctx = make_ctx()
+    planner = make_planner(store)
+
+    result = await planner.replan(ctx, NOW)
+
+    selected_ids = {
+        record.dinner_id for record in result.updated.values() if record.dinner_id is not None
+    }
+    assert selected_ids
+    assert all(dinner_id > 0 for dinner_id in selected_ids)
+    assert set(store.dinners) == selected_ids
+    assert len(store.dinners) < 27
+
+
 async def test_check_rules_clean_when_nothing_is_planned():
     store = standard_household()
     planner = make_planner(store)

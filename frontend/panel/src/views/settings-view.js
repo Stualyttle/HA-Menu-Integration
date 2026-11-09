@@ -121,7 +121,7 @@ export class MpSettingsView extends MpView {
   async retryLookups() {
     try {
       await api.settings.retryLookups();
-      toast(this, t('settings.retryStarted'));
+      toast(this, t('settings.retryCompleted'));
     } catch (err) {
       reportError(this, err);
     }

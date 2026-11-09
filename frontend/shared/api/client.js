@@ -5,8 +5,7 @@
  * Errors from the server ({error: {code, message, details}}) and network failures
  * are normalised into ApiError so callers can branch on `code`.
  * The 401 handler (addon/app/main.py) answers {detail: "..."} instead; both shapes
- * are accepted. Routes marked "Planned" in docs/API.md are called but may 404 until
- * they land; calls marked TODO(API) use request bodies the contract does not define yet.
+ * are accepted. Every operation below maps to an implemented route in docs/API.md.
  */
 
 export class ApiError extends Error {
@@ -64,11 +63,6 @@ async function parseBody(response) {
   }
 }
 
-/** Client-side rejection for routes that docs/API.md does not define. No request is sent. */
-function notInContract(name) {
-  return Promise.reject(new ApiError(501, 'not_implemented', `${name} is not in docs/API.md`));
-}
-
 /**
  * @param {object} [options]
  * @param {string} [options.baseUrl='api'] Relative base, without trailing slash.
@@ -106,24 +100,16 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
   return {
     request,
     health: () => get('/health'),
-    // Planned (API.md). TODO(API): request body not defined in the contract.
     sync: (payload) => post('/sync', payload),
 
     menu: {
-      // Planned (API.md): GET /api/menu?from=&to= returns a bare array.
       list: (from, to) => get('/menu', { from, to }),
-      // Planned (API.md): GET /api/menu/today.
       today: () => get('/menu/today'),
-      // Planned (API.md): PUT /api/menu/{date}. TODO(API): body (pin, unpin, set dinner) not defined in the contract.
       update: (date, payload) => put(`/menu/${id(date)}`, payload),
-      // Planned (API.md): POST /api/menu/{date}/eaten.
       eaten: (date) => post(`/menu/${id(date)}/eaten`),
-      // Planned (API.md): GET /api/menu/{date}/swap.
       swapSuggestions: (date) => get(`/menu/${id(date)}/swap`),
-      // Planned (API.md): POST /api/menu/{date}/swap with {dinner_id}.
-      swap: (date, dinnerId) => post(`/menu/${id(date)}/swap`, { dinner_id: dinnerId }),
-      // Not in docs/API.md. Stubbed: no network call. TODO(API): confirm whether the route exists.
-      replan: () => notInContract('menu.replan'),
+      swap: (date, itemIds) => post(`/menu/${id(date)}/swap`, { item_ids: itemIds }),
+      replan: () => post('/menu/replan'),
     },
 
     items: {
@@ -132,9 +118,7 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
       create: (payload) => post('/items', payload),
       update: (itemId, payload) => put(`/items/${id(itemId)}`, payload),
       remove: (itemId) => del(`/items/${id(itemId)}`),
-      // Planned (API.md): POST /api/items/{id}/nutrition/lookup.
-      lookupNutrition: (itemId) => post(`/items/${id(itemId)}/nutrition/lookup`),
-      // Planned (API.md): PUT /api/items/{id}/nutrition. TODO(API): body shape not defined in the contract.
+      lookupNutrition: (itemId) => get(`/items/${id(itemId)}/nutrition/lookup`),
       setNutrition: (itemId, payload) => put(`/items/${id(itemId)}/nutrition`, payload),
     },
 
@@ -151,8 +135,8 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
       create: (payload) => post('/rules', payload),
       update: (ruleId, payload) => put(`/rules/${id(ruleId)}`, payload),
       remove: (ruleId) => del(`/rules/${id(ruleId)}`),
-      // Planned (API.md): POST /api/rules/check. TODO(API): body not defined in the contract.
-      check: (payload) => post('/rules/check', payload),
+      check: (rule, ruleId) =>
+        post('/rules/check', { rule, ...(ruleId === undefined ? {} : { rule_id: ruleId }) }),
     },
 
     stock: {
@@ -164,8 +148,7 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
     settings: {
       get: () => get('/settings'),
       update: (payload) => put('/settings', payload),
-      // Not in docs/API.md. Stubbed: no network call. TODO(API): confirm whether the route exists.
-      retryLookups: () => notInContract('settings.retryLookups'),
+      retryLookups: () => post('/items/nutrition/retry'),
     },
 
     template: {
@@ -173,12 +156,9 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
       update: (payload) => put('/template', payload),
     },
 
-    // Planned (API.md): GET /api/export. TODO(API): the response is a file download; it is parsed as JSON here.
     exportData: () => get('/export'),
-    // Planned (API.md): POST /api/import/preview. TODO(API): body not defined in the contract.
     importPreview: (payload) => post('/import/preview', payload),
-    // Planned (API.md): POST /api/import. TODO(API): body (include_settings, include_history) not fully defined in the contract.
-    importData: (payload) => post('/import', payload),
+    importData: (document, options = {}) => post('/import', { document, ...options }),
 
     warnings: {
       list: () => get('/warnings'),

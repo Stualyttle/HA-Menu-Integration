@@ -109,8 +109,7 @@ export class MpImportExportView extends MpView {
     if (!this.exportFile || this.busy) return;
     this.busy = true;
     try {
-      await api.importData({
-        ...this.exportFile,
+      await api.importData(this.exportFile, {
         include_settings: this.includeSettings,
         include_history: this.includeHistory,
       });

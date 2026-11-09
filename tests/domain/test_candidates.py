@@ -184,7 +184,7 @@ def test_missing_type_yields_no_candidates_without_raising():
     assert generate_candidates(snapshot_with(store), template_ctx(standard_slots()), "s") == []
 
 
-def test_planner_persists_generated_dinners_once():
+def test_planner_load_keeps_generated_dinners_transient():
     store = standard_household()
     store.dinners.clear()
     ctx = make_ctx(window_days=14)
@@ -192,11 +192,13 @@ def test_planner_persists_generated_dinners_once():
 
     snapshot = _run(planner.load(ctx))
     count = len(store.dinners)
-    _run(planner.load(ctx))
+    second = _run(planner.load(ctx))
 
-    assert count == 27
-    assert len(store.dinners) == count
+    assert count == 0
+    assert len(store.dinners) == 0
     assert len(snapshot.dinners) == 27
+    assert all(dinner_id < 0 for dinner_id in snapshot.dinners)
+    assert second.dinners == snapshot.dinners
 
 
 def test_planner_fills_window_from_generated_dinners_alone():

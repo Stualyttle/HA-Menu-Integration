@@ -7,7 +7,9 @@ The HTTP clients are backed by httpx.MockTransport, so no test touches the netwo
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,7 @@ from fastapi.testclient import TestClient
 from app.api import nutrition as nutrition_api
 from app.db import Stores
 from app.main import create_app
+from app.models import WarningCode, WarningRecord, WarningSubject
 
 OFF_PRODUCTS = [
     {
@@ -295,3 +298,27 @@ def test_usda_key_is_write_only(stores: Stores) -> None:
         assert USDA_KEY not in response.text
     assert all(USDA_KEY not in str(request.url) for request in seen)
     assert all(USDA_KEY not in request.headers.get("user-agent", "") for request in seen)
+
+
+def test_retry_endpoint_immediately_retries_open_lookup_failures(stores: Stores) -> None:
+    test_client, seen = _build_client(stores, None)
+    item_id = _create_item(test_client, "Chicken breast fillet")
+    asyncio.run(
+        stores.warnings.open_warning(
+            WarningRecord(
+                id=0,
+                code=WarningCode.NUTRITION_FAILED,
+                subject_type=WarningSubject.ITEM,
+                subject=str(item_id),
+                payload={"attempts": 1, "next_attempt_at": None, "reason": "unavailable"},
+                created_at=datetime.now(UTC),
+            )
+        )
+    )
+
+    response = test_client.post("/api/items/nutrition/retry")
+
+    assert response.status_code == 200
+    assert response.json() == {"retried_item_ids": [item_id]}
+    assert len(seen) == 1
+    assert asyncio.run(stores.warnings.list_open()) == []

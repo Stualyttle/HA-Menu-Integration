@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models import (
     Category,
@@ -220,7 +220,7 @@ class DinnerItemOut(BaseModel):
 
 
 class DinnerOut(BaseModel):
-    id: int
+    id: int | None
     items: list[DinnerItemOut]
 
 
@@ -245,7 +245,14 @@ class MenuUpdateIn(BaseModel):
 
 
 class SwapIn(BaseModel):
-    dinner_id: int
+    dinner_id: int | None = None
+    item_ids: list[int] | None = Field(default=None, min_length=1, max_length=6)
+
+    @model_validator(mode="after")
+    def _one_target(self) -> SwapIn:
+        if (self.dinner_id is None) == (self.item_ids is None):
+            raise ValueError("send exactly one of 'dinner_id' or 'item_ids'")
+        return self
 
 
 class SyncIn(BaseModel):

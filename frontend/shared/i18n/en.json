@@ -213,7 +213,7 @@
   "settings.usda.placeholder": "Not set",
   "settings.usda.help": "Stored as a secret. Never included in exports.",
   "settings.retry": "Retry failed lookups",
-  "settings.retryStarted": "Retry started.",
+  "settings.retryCompleted": "Failed lookups retried.",
   "settings.saved": "Settings saved.",
   "settings.reloadForLanguage": "Reloading to apply the language.",
 

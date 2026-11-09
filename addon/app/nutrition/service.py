@@ -212,6 +212,21 @@ class NutritionService:
             await self.lookup(item_id, refresh=True)
         return due
 
+    async def retry_failed_lookups(self) -> list[int]:
+        """Immediately retry every item with an open nutrition failure warning."""
+        item_ids = sorted(
+            {
+                int(warning.subject)
+                for warning in await self._warnings.list_open()
+                if warning.code is WarningCode.NUTRITION_FAILED
+                and warning.subject_type is WarningSubject.ITEM
+                and warning.subject.isdecimal()
+            }
+        )
+        for item_id in item_ids:
+            await self.lookup(item_id, refresh=True)
+        return item_ids
+
     async def _require_item(self, item_id: int) -> Item:
         item = await self._items.get_item(item_id)
         if item is None:

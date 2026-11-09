@@ -165,6 +165,20 @@ def test_swap_suggestions_return_up_to_three_dinners(client: TestClient) -> None
     assert isinstance(suggestions, list)
     assert 0 < len(suggestions) <= 3
     assert {"id", "items"} <= set(suggestions[0])
+    assert suggestions[0]["items"]
+    assert all("id" in item for item in suggestions[0]["items"])
+
+
+def test_reading_swap_suggestions_does_not_persist_generated_dinners(
+    client: TestClient, stores: Stores
+) -> None:
+    day = _planned_future_day(client)
+    before = asyncio.run(stores.menu.list_dinners())
+
+    response = client.get(f"/api/menu/{day}/swap")
+
+    assert response.status_code == 200
+    assert asyncio.run(stores.menu.list_dinners()) == before
 
 
 def test_swap_suggestions_on_past_day_is_conflict(client: TestClient) -> None:
@@ -176,11 +190,22 @@ def test_swap_suggestions_on_past_day_is_conflict(client: TestClient) -> None:
 def test_swap_sets_chosen_dinner_and_pins_it(client: TestClient) -> None:
     day = _planned_future_day(client)
     suggestion = client.get(f"/api/menu/{day}/swap").json()[0]
-    response = client.post(f"/api/menu/{day}/swap", json={"dinner_id": suggestion["id"]})
+    item_ids = [item["id"] for item in suggestion["items"]]
+    response = client.post(f"/api/menu/{day}/swap", json={"item_ids": item_ids})
     assert response.status_code == 200
     body = response.json()
-    assert body["dinner"]["id"] == suggestion["id"]
+    assert body["dinner"]["id"] > 0
+    assert [item["id"] for item in body["dinner"]["items"]] == item_ids
     assert body["status"] == "pinned"
+
+
+def test_swap_requires_exactly_one_dinner_target(client: TestClient) -> None:
+    day = _planned_future_day(client)
+
+    assert client.post(f"/api/menu/{day}/swap", json={}).status_code == 400
+    response = client.post(f"/api/menu/{day}/swap", json={"dinner_id": 1, "item_ids": [1, 10, 20]})
+    assert response.status_code == 400
+    assert _error_code(response) == "validation_error"
 
 
 def test_swap_with_unknown_dinner_is_400(client: TestClient) -> None:
@@ -192,10 +217,10 @@ def test_swap_with_unknown_dinner_is_400(client: TestClient) -> None:
 
 def test_put_with_dinner_id_swaps(client: TestClient) -> None:
     day = _planned_future_day(client)
-    suggestion = client.get(f"/api/menu/{day}/swap").json()[0]
-    response = client.put(f"/api/menu/{day}", json={"dinner_id": suggestion["id"]})
+    planned_day = next(entry for entry in _list(client) if entry["date"] == day)
+    response = client.put(f"/api/menu/{day}", json={"dinner_id": planned_day["dinner"]["id"]})
     assert response.status_code == 200
-    assert response.json()["dinner"]["id"] == suggestion["id"]
+    assert response.json()["dinner"]["id"] == planned_day["dinner"]["id"]
 
 
 def test_eaten_marks_day_and_leaves_stock_unchanged(client: TestClient, stores: Stores) -> None:

@@ -213,7 +213,7 @@
   "settings.usda.placeholder": "Niet ingesteld",
   "settings.usda.help": "Wordt als geheim opgeslagen. Nooit meegenomen in exports.",
   "settings.retry": "Mislukte opzoekingen opnieuw proberen",
-  "settings.retryStarted": "Opnieuw proberen gestart.",
+  "settings.retryCompleted": "Mislukte opzoekingen opnieuw geprobeerd.",
   "settings.saved": "Instellingen opgeslagen.",
   "settings.reloadForLanguage": "Pagina wordt opnieuw geladen om de taal toe te passen.",
 
