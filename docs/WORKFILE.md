@@ -6,7 +6,7 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-09 (hassfest dependency and config-schema findings addressed)
+Last updated: 2026-11-09 (manifest key ordering corrected after Hassfest rerun)
 
 ## Status
 
@@ -173,3 +173,4 @@ Depends on: 9. Owner: G.
 | 2026-11-09 | Phase 8 implementation: added three Lit Lovelace cards, EN/NL labels, HA config editors, websocket data/actions, and Vite bundle build into the integration's `www` directory. Integration now serves and auto-registers the versioned card bundle. Added stock-preview websocket proxy and transient item-ID swap apply support. Allowed the today card to swap today's dinner until it is marked eaten, matching the planned UX. |
 | 2026-11-09 | Phase 8 verification: Ruff clean; add-on/API tests 338 passed; integration tests 37 passed; frontend tests 23 passed; panel and card builds succeeded (card bundle 28.19 kB). CI now builds the card bundle. Updated API, plan, README, and agent guidance. |
 | 2026-11-09 | Fixed the GitHub hassfest failure: added `http` as an after-dependency and declared the empty YAML config schema. Updated the plan's dependency description to match the manifest. |
+| 2026-11-09 | Fixed the follow-up Hassfest failure by sorting manifest keys after `domain` and `name`. Local key-order and JSON checks pass; Hassfest could not be rerun because the Docker daemon is unavailable. |
