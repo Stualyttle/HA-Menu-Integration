@@ -4,10 +4,10 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter, withHashLocation } from '@angular/router';
-import { AppComponent } from './app/app.component';
+import { AppLayoutComponent } from '@app/layouts/app-layout.component';
 import { routes } from './app/app.routes';
 
-bootstrapApplication(AppComponent, {
+bootstrapApplication(AppLayoutComponent, {
   providers: [
     importProvidersFrom(MatDialogModule, MatSnackBarModule),
     provideAnimationsAsync(),

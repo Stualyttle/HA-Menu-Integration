@@ -6,16 +6,16 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-24 (Angular panel migration documentation reconciled)
+Last updated: 2026-11-24 (Angular source reorganization documented)
 
 ## Status
 
-- **Phase:** Angular panel migration is implemented; local checks pass, while browser and live HA verification remain unverified.
-- **Now:** Typecheck, Angular build, 24 panel tests, card bundle build, Ruff (88 files), and 355 add-on tests pass.
+- **Phase:** Angular source folders reorganized and documentation updated; typecheck, panel tests, and Angular production build passed.
+- **Now:** Source layout and aliases are documented; browser and live Home Assistant verification remain unverified.
 - **Next:** Verify the panel in a browser and against live Home Assistant; then continue CI/release validation.
 - **Blockers:** Browser/live HA checks need an environment. Balance defaults, the 500-candidate cap, and household portion scaling remain unverified. `npm audit` reports 33 dev-dependency findings (3 critical, 8 high, 21 moderate, 1 low); unresolved. Production dependency audit is clean.
 
-Current task: Angular panel migration documentation reconciled. Browser/live Home Assistant verification remains unverified.
+Current task: Angular source reorganization documented. Browser/live Home Assistant verification remains unverified.
 
 Verification (wave 2): ruff check and format clean. Add-on pytest 336 passed. Integration pytest 33 passed. Panel Vitest 20 passed; production build succeeded. actionlint clean. 39 API operations, no duplicates. Generated dinner read/write behavior and live API request shapes have regression tests.
 
@@ -101,7 +101,7 @@ Depends on: 2. Owner: C. Status: partial (`5e39391`).
 
 ## Phase 6: Panel UI (Angular + Angular Material)
 
-Depends on: 1. Owner: E. Status: Angular migration and local checks verified; browser/live HA behavior not yet checked.
+Depends on: 1. Owner: E. Status: Angular source reorganization documented; typecheck, 24 panel tests, and production build passed; browser/live HA behavior not yet checked.
 
 - [x] Shared i18n (EN and NL) and API client (`frontend/shared/`)
 - [x] Menu, Items, Categories, Rules, Stock, Settings, and Import / export tabs (`frontend/panel/`)
@@ -155,6 +155,7 @@ Depends on: 9. Owner: G.
 
 | Date | Done |
 |---|---|
+| 2026-11-24 | Documented the Angular source-folder reorganization and TypeScript aliases. Verified: typecheck passed, 24 panel tests passed, Angular production build succeeded. Browser/live HA remain unverified; `npm run build:cards` and Python tests were not rerun for this structure-only batch. |
 | 2026-11-24 | Documented the completed Angular panel migration. Verified Angular typecheck/build, 24 panel tests, Vite card build, Ruff clean (88 files), and 355 add-on tests; browser/live HA verification remains unverified. `npm audit --omit=dev` is clean; 33 dev-dependency findings remain unresolved (3 critical, 8 high, 21 moderate, 1 low). |
 | 2026-11-24 | Refreshed dashboard and first-run onboarding documented against the implementation. Verified Ruff clean; full add-on suite 354 passed (temporary Python 3.14 venv; repository targets Python 3.12); panel tests 24 passed and production build succeeded; `git diff --check` clean. Browser checks and integration tests not run. |
 | 2026-11-04 | Repository inspected: greenfield, one commit (`0e2da4f`). |

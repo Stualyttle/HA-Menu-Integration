@@ -2,6 +2,10 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/app/*"],
+      "@shared/*": ["../shared/*"]
+    },
     "outDir": "./out-tsc",
     "strict": true,
     "noImplicitOverride": true,

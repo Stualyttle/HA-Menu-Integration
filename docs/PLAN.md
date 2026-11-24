@@ -2,7 +2,7 @@
 
 Working name: **Menu Planner** (integration domain `menu_planner`, add-on slug `menu_planner`).
 Progress tracking: `docs/WORKFILE.md`. Mockups: `docs/mockups/`.
-Last updated: 2026-11-24 (Angular panel migration).
+Last updated: 2026-11-24 (Angular panel source layout).
 
 Items marked **(proposal)** are implementation choices not yet confirmed by the user. Items marked **(assumed)** are interpretations to check in review (see section 15).
 
@@ -255,6 +255,28 @@ custom_components/menu_planner/   HA integration (Python), www/ (built cards), b
 addon/                            config.yaml, Dockerfile, rootfs/ (s6 services), app/ (FastAPI, SQLite, domain, nutrition, io)
 frontend/
   panel/                           Angular + Angular Material app; Angular CLI build -> addon/app/static/panel/
+    src/main.ts                    bootstraps the app layout
+    src/app/
+      app.routes.ts                application routes
+      layouts/app-layout.component.ts
+                                   application shell
+      core/services/
+        i18n.service.ts
+        message.service.ts
+      components/
+        dialogs/confirmation-dialog.component.ts
+        items/item-editor.component.ts
+      pages/
+        dashboard/dashboard.component.ts
+        menu/menu.component.ts
+        items/items.component.ts
+        categories/categories.component.ts
+        rules/rules.component.ts
+        stock/stock.component.ts
+        settings/settings.component.ts
+        import-export/import-export.component.ts
+        onboarding/onboarding.component.ts
+    tsconfig.json                  @app/* -> src/app/*; @shared/* -> ../shared/*
   cards/                           Lit Lovelace cards; Vite build -> custom_components/menu_planner/www/
   shared/                          API client, i18n, and legacy helpers (some Lit)
 tests/                            pytest: domain, db, api, io, integration
