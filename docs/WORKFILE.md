@@ -6,16 +6,16 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-09 (Belgian starter catalog and standalone complete meals implemented)
+Last updated: 2026-11-24 (dashboard and first-run onboarding batch verified)
 
 ## Status
 
-- **Phase:** Lovelace card implementation complete; card bundle builds and is served/registered by the integration. Local validation is complete; live release checks remain.
-- **Now:** Phase 8 is implemented and verified locally. Continue GitHub workflow/image validation and remaining Phase 9–10 release work. Accepted decisions remain implemented: keep the documented 401 `detail` response; persist generated dinners only when planner writes select them; use real API routes and payloads throughout the panel.
+- **Phase:** Phase 6 dashboard and first-run onboarding implementation is complete; browser behavior remains unchecked.
+- **Now:** Dashboard/onboarding documentation is reconciled. Ruff is clean, 354 add-on tests pass, and 24 panel tests plus the production build pass locally.
 - **Next:** Run CI on GitHub, perform the remaining live Supervisor checks, and prepare the `v0.1.0` release.
-- **Blockers:** Live Supervisor checks need HA access details. The balance defaults (PLAN 6.9) are unverified. Remaining open questions: the 500-candidate cap and that household size does not scale portions.
+- **Blockers:** Live Supervisor checks need HA access. Dashboard browser behavior, balance defaults, the 500-candidate cap, and whether household size scales portions remain unverified.
 
-Current task: expanded the starter catalog through append-only database migration v2, and added standalone complete-meal support through API, planner, import/export, and panel UI. Python tests (350) and panel tests (24) pass; panel bundle builds and Ruff checks pass. Integration tests could not start in this environment because `voluptuous` is missing from the HA test environment.
+Current task: refreshed dashboard and first-run onboarding implemented; related documentation reconciled. No browser or integration tests were run for this batch.
 
 Verification (wave 2): ruff check and format clean. Add-on pytest 336 passed. Integration pytest 33 passed. Panel Vitest 20 passed; production build succeeded. actionlint clean. 39 API operations, no duplicates. Generated dinner read/write behavior and live API request shapes have regression tests.
 
@@ -101,13 +101,14 @@ Depends on: 2. Owner: C. Status: partial (`5e39391`).
 
 ## Phase 6: Panel UI (Lit + Material Web)
 
-Depends on: 1. Owner: E. Status: code and Vitest done (`5e39391`); browser behavior not yet checked.
+Depends on: 1. Owner: E. Status: refreshed dashboard/onboarding implemented and verified locally; browser behavior not yet checked.
 
 - [x] Shared theme, i18n (EN and NL), and API client (`frontend/shared/`)
 - [x] Menu, Items, Categories, Rules, Stock, Settings, and Import / export tabs (`frontend/panel/`)
 - [x] Warnings banner
-- [x] Vitest (20 tests pass)
+- [x] Vitest (24 tests pass)
 - [ ] Browser check.
+- [x] Refreshed dashboard overview and first-run onboarding: localized language selection and starter preview, optional ingredients/meals, and planning preferences.
 - [x] Align panel API calls with implemented backend routes. Replan and retry lookups use real endpoints; rule-check, nutrition lookup, and import payloads match the contract.
 - [x] Bundle rebuilt (`addon/app/static/panel/`). Grep for external URLs: pending.
 - [x] Serve the built panel and assets from the unauthenticated Ingress listener; keep the internal token-protected listener API-only.
@@ -153,6 +154,7 @@ Depends on: 9. Owner: G.
 
 | Date | Done |
 |---|---|
+| 2026-11-24 | Refreshed dashboard and first-run onboarding documented against the implementation. Verified Ruff clean; full add-on suite 354 passed (temporary Python 3.14 venv; repository targets Python 3.12); panel tests 24 passed and production build succeeded; `git diff --check` clean. Browser checks and integration tests not run. |
 | 2026-11-04 | Repository inspected: greenfield, one commit (`0e2da4f`). |
 | 2026-11-04 | Requirements gathered (five question rounds). HA add-on, discovery, and card docs checked. |
 | 2026-11-04 | `docs/PLAN.md` written. `docs/` and `docs/mockups/` created. |

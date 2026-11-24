@@ -208,17 +208,20 @@ Conflicts resolve in this order, highest first:
 
 ## 9. Add-on panel
 
-Sidebar panel via Ingress (`panel_title: Menu Planner`). Tabs:
+Sidebar panel via Ingress (`panel_title: Menu Planner`). A compact Material Web overview is the landing page, with the menu and management sections reachable from the navigation:
 
-1. **Menu**: the window with status badges (planned, pinned, eaten, empty). A day replaced by a stock change also shows a "replaced" badge (`replaced_reason` is set). Pin, edit, swap, log eaten. Warnings banner.
-2. **Items**: search and filters (type, category, verified, stock). Add or edit: name, type, categories, portion, fat source, stock tracking, complete-meal flag, nutrition lookup or manual entry, confirm match.
-3. **Categories**: name, minimum per 7 days, item count. Starter categories are editable and deletable.
-4. **Rules**: blacklist and whitelist. A combination builder (pick categories) and item rules. Feasibility warnings.
-5. **Stock**: yes/no per item, with a preview of how many dinners a "no" would replace before saving.
-6. **Settings**: window length (7 to 60, default 14), household size (2), repeat gap (14), balance targets, dinner template (slot counts), language, USDA API key, nutrition retry.
-7. **Import / export**: export the file; import with a preview.
+1. **Overview**: tonight's dinner, planned-day, stock and warning summaries, next dinners, and shortcuts.
+2. **Menu**: the window with status badges (planned, pinned, eaten, empty). A day replaced by a stock change also shows a "replaced" badge (`replaced_reason` is set). Pin, edit, swap, log eaten. Warnings banner.
+3. **Items**: search and filters (type, category, verified, stock). Add or edit: name, type, categories, portion, fat source, stock tracking, complete-meal flag, nutrition lookup or manual entry, confirm match.
+4. **Categories**: name, minimum per 7 days, item count. Starter categories are editable and deletable.
+5. **Rules**: blacklist and whitelist. A combination builder (pick categories) and item rules. Feasibility warnings.
+6. **Stock**: yes/no per item, with a preview of how many dinners a "no" would replace before saving.
+7. **Settings**: window length (7 to 60, default 14), household size (2), repeat gap (14), fish and vegetarian category minimums, balance targets, dinner template (slot counts), English/Dutch language, USDA API key, and nutrition retry.
+8. **Import / export**: export the file; import with a preview.
 
-Starter content on first install and database upgrade: a broad Belgian/European family-food catalog of meat and poultry cuts, fish and seafood, vegetarian proteins, vegetables, grains, potatoes, bread, pasta and prepared meals (including spaghetti bolognese, lasagne, macaroni and cheese, and pizza). Catalog items and categories are editable or deletable (Appendix A; migration v2).
+New installations start with a first-run wizard. Users explicitly choose English or Dutch, select ingredients and complete meals independently (or start empty), and configure planning, dietary category minimums, meal slots, and balance targets. The wizard previews exact seed names and their language. Existing installations are marked as configured during migration and keep their current data.
+
+Starter content is a selectable localized pack: the English pack contains the broad Belgian/European family-food catalog plus additional ingredients and complete meals; the Dutch pack is a curated fully translated catalog. Components remain separate from standalone complete meals (Appendix A; migrations v2–v3).
 
 ## 10. Lovelace cards
 
@@ -344,6 +347,6 @@ Rules: each agent edits only the files it owns. API changes go through `docs/API
 
 ## Appendix A: Starter content
 
-The starter catalog is defined in `addon/app/db/starter_content.py` and added by migration v2. It builds on the original v1 seeds and covers common poultry and meat cuts, Belgian and nearby fish/seafood, vegetarian proteins, familiar Belgian/European vegetables, potatoes, rice/grains, bread, pasta/noodles, and ready-made dinners. Prepared examples include lasagne, spaghetti bolognese, macaroni and cheese, pizza, vegetable lasagne, shepherd's pie, fish pie, vol-au-vent with fries, and stoemp with sausage.
+The starter catalog is defined in `addon/app/db/starter_content.py`. The English pack covers common poultry and meat cuts, Belgian and nearby fish/seafood, vegetarian proteins, familiar Belgian/European vegetables, potatoes, rice/grains, bread, pasta/noodles, and ready-made dinners. Prepared examples include lasagne, spaghetti bolognese, macaroni and cheese, pizza, vegetable lasagne, shepherd's pie, fish pie, vol-au-vent with fries, stoemp with sausage, chicken curry, vegetable curry, bean chilli, shakshuka, and chicken fajitas. The Dutch pack translates the selected ingredients, meals, and categories; the onboarding preview is the source of the exact names.
 
 Categories include fish, poultry, chicken, veal, pork, beef, lamb/game, seafood, vegetarian, legumes, pasta, rice/grains, potatoes, vegetables, Belgian, Asian, Mediterranean, and Mexican. Minimums remain editable: fish at least 1 and vegetarian at least 2 per 7 days. Component staples (for example spaghetti and lasagne sheets) remain distinct from complete dinner choices (for example spaghetti bolognese and lasagne).

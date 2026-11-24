@@ -222,6 +222,32 @@ class TemplateIn(BaseModel):
     carb: Annotated[int, Field(ge=0, le=2)]
 
 
+class OnboardingIn(BaseModel):
+    language: Literal["en", "nl"]
+    seed_ingredients: bool
+    seed_meals: bool
+    window_days: Annotated[int, Field(ge=7, le=60)]
+    household_size: Annotated[int, Field(ge=1, le=10)]
+    repeat_gap_days: Annotated[int, Field(ge=0, le=60)]
+    balance_targets: BalanceTargets
+    template: TemplateIn
+    fish_min_per_7_days: Annotated[int, Field(ge=0, le=7)] = 1
+    vegetarian_min_per_7_days: Annotated[int, Field(ge=0, le=7)] = 2
+
+    @model_validator(mode="after")
+    def _valid_setup(self) -> OnboardingIn:
+        if not any(self.template.model_dump().values()):
+            raise ValueError("template must have at least one item per dinner")
+        if (
+            sum(
+                self.balance_targets.model_dump()[key] for key in ("vegetables", "protein", "carbs")
+            )
+            != 100
+        ):
+            raise ValueError("balance targets must sum to 100")
+        return self
+
+
 class DinnerItemOut(BaseModel):
     id: int
     name: str

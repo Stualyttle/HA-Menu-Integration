@@ -151,6 +151,11 @@ export function createApiClient({ baseUrl = 'api', fetchImpl = globalThis.fetch 
       retryLookups: () => post('/items/nutrition/retry'),
     },
 
+    onboarding: {
+      get: () => get('/onboarding'),
+      complete: (payload) => post('/onboarding', payload),
+    },
+
     template: {
       get: () => get('/template'),
       update: (payload) => put('/template', payload),

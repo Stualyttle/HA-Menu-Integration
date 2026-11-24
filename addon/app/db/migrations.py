@@ -137,6 +137,7 @@ DEFAULT_SETTINGS: dict[str, object] = {
     "repeat_gap_days": 14,
     "balance_targets": {"vegetables": 50, "protein": 25, "carbs": 25, "tolerance": 10},
     "language": "auto",
+    "setup_complete": False,
 }
 
 DEFAULT_TEMPLATE: dict[str, int] = {"protein": 1, "vegetable": 1, "carb": 1}
@@ -269,4 +270,18 @@ def _v2(conn: sqlite3.Connection) -> None:
         )
 
 
-MIGRATIONS: tuple[Migration, ...] = (_v1, _v2)
+def _v3(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "CREATE TABLE starter_items ("
+        "item_id INTEGER PRIMARY KEY REFERENCES items (id) ON DELETE CASCADE)"
+    )
+    row = conn.execute("SELECT value_json FROM settings WHERE key = 'setup_complete'").fetchone()
+    if row is None:
+        conn.execute("INSERT INTO settings (key, value_json) VALUES ('setup_complete', 'true')")
+        return
+
+    if not json.loads(row["value_json"]):
+        conn.execute("INSERT INTO starter_items (item_id) SELECT id FROM items")
+
+
+MIGRATIONS: tuple[Migration, ...] = (_v1, _v2, _v3)

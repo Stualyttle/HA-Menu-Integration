@@ -11,7 +11,7 @@ Frozen interface between the add-on, the integration, and the frontend. Parallel
 
 - Base path: `/api`. All bodies are JSON (`application/json`, UTF-8).
 - Dates are ISO 8601 `YYYY-MM-DD` in the local time zone sent by the integration on each sync (`time_zone`, IANA name).
-- Errors: `{"error": {"code": "<snake_case>", "message": "<human text>", "details": {}}}` with HTTP 400 (request or config validation, including an all-zero template), 404, 409 (conflict, e.g. duplicate name, or a day that cannot be edited, or a rejected swap), 500.
+- Errors: `{"error": {"code": "<snake_case>", "message": "<human text>", "details": {}}}`. Request/config validation (including an all-zero template) returns 400 (`validation_error`); missing resources return 404 (`not_found`); conflicts return 409 (`conflict`, `duplicate_name`, or `setup_complete`); unexpected failures return 500 (`internal_error`). Unsupported methods return 405 (`method_not_allowed`).
 - Auth failure (401) is the exception to the envelope: `{"detail": "invalid or missing token"}` (internal listener only).
 - 422 is not used. Request validation failures return 400 (`validation_error`); `POST /api/rules/check` returns 200 with `feasible: false` instead of an error.
 - List endpoints return a bare JSON array, not a wrapper object.
@@ -42,7 +42,7 @@ Day object (`MenuDayOut`): `{date, status: planned|pinned|eaten|empty, dinner: {
 
 Generated candidate dinners are transient while reading or checking rules. A planner write stores only the candidate dinners selected for the resulting plan. Fetching swap suggestions does not write candidates; applying a suggestion identifies it by its item IDs and persists it as part of the swap.
 
-Errors: a date outside the window or a past date in a swap or PUT returns 409 (`day_not_editable`). An eaten day cannot be pinned or swapped. A dinner that fails hard rules returns 409 (`swap_rejected`).
+Errors: a date outside the window or a past date in a swap or PUT returns 409 (`conflict`). An eaten day cannot be pinned or swapped; a dinner that fails hard rules also returns 409 (`conflict`). The response message describes the conflict.
 
 ## Items, categories, rules
 
@@ -81,8 +81,13 @@ Rule object (`RuleOut`): `{id, kind, scope, category_ids, item_id, enabled}`.
 |---|---|---|---|
 | GET / PUT | `/api/settings` | Read `SettingsOut`: `window_days`, `household_size`, `repeat_gap_days`, `balance_targets`, `language`. Update takes `SettingsIn` (all fields optional). `usda_api_key` is write-only and never returned. | Implemented |
 | GET / PUT | `/api/template` | Body `{protein, vegetable, carb}`, each 0–2. An all-zero template returns 400. | Implemented |
+| GET / POST | `/api/onboarding` | First-run setup status and localized starter pack preview; POST saves language, planning preferences, template, and selected seed groups. | Implemented |
 
 `balance_targets` is `{vegetables, protein, carbs, tolerance}`, each 0–100. The three targets must sum to 100 (checked in the domain layer).
+
+`GET /api/onboarding` returns `{required, packs}`. `packs.en` and `packs.nl` each include the content language, exact ingredient and complete-meal names and counts, plus the category names for each group. Names and category labels are localized; the Dutch pack is a curated subset of the English catalog. Ingredients are component candidates and complete meals are standalone dinner choices.
+
+`POST /api/onboarding` takes `{language: en|nl, seed_ingredients: bool, seed_meals: bool, window_days: 7..60, household_size: 1..10, repeat_gap_days: 0..60, balance_targets, template, fish_min_per_7_days: 0..7, vegetarian_min_per_7_days: 0..7}`. Either seed group may be disabled, including both for an empty start. With both groups disabled, category minimums must be zero. The first successful call marks setup complete; a repeat returns 409 (`setup_complete`). New databases require setup. Databases upgraded from an earlier schema are marked complete and retain their existing content.
 
 ## Import and export
 

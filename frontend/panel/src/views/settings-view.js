@@ -8,8 +8,12 @@ import { api } from '../../../shared/api/instance.js';
 const WINDOW_MIN = 7;
 const WINDOW_MAX = 60;
 const SLOT_MAX = 2;
-const LANGUAGES = ['auto', 'en', 'nl'];
+const LANGUAGES = ['en', 'nl'];
 const RELOAD_DELAY_MS = 1200;
+const PREFERENCE_CATEGORIES = {
+  fish: ['fish', 'vis'],
+  vegetarian: ['vegetarian', 'vegetarisch'],
+};
 
 function numberOr(value, fallback) {
   const parsed = Number(value);
@@ -20,6 +24,8 @@ export class MpSettingsView extends MpView {
   static properties = {
     form: { state: true },
     template: { state: true },
+    preferenceCategories: { state: true },
+    preferences: { state: true },
     usdaKey: { state: true },
     loading: { state: true },
     saving: { state: true },
@@ -29,6 +35,8 @@ export class MpSettingsView extends MpView {
     super();
     this.form = null;
     this.template = { protein: 0, vegetable: 0, carb: 0 };
+    this.preferenceCategories = {};
+    this.preferences = { fish: 0, vegetarian: 0 };
     /** Typed into the write-only field; never pre-filled from the server. */
     this.usdaKey = '';
     this.loading = true;
@@ -44,12 +52,18 @@ export class MpSettingsView extends MpView {
   async load() {
     this.loading = true;
     try {
-      const [settings, template] = await Promise.all([api.settings.get(), api.template.get()]);
+      const [settings, template, categories] = await Promise.all([
+        api.settings.get(),
+        api.template.get(),
+        api.categories.list(),
+      ]);
       this.form = {
         window_days: numberOr(settings.window_days, 14),
         household_size: numberOr(settings.household_size, 2),
         repeat_gap_days: numberOr(settings.repeat_gap_days, 14),
-        language: settings.language ?? 'auto',
+        language: ['en', 'nl'].includes(settings.language)
+          ? settings.language
+          : document.documentElement.lang || 'en',
         balance_targets: {
           vegetables: numberOr(settings.balance_targets?.vegetables, 50),
           protein: numberOr(settings.balance_targets?.protein, 25),
@@ -58,6 +72,18 @@ export class MpSettingsView extends MpView {
         },
       };
       this.loadedLanguage = this.form.language;
+      this.preferenceCategories = Object.fromEntries(
+        Object.entries(PREFERENCE_CATEGORIES).map(([key, names]) => [
+          key,
+          categories.find((category) => names.includes(category.name.toLowerCase())) ?? null,
+        ]),
+      );
+      this.preferences = Object.fromEntries(
+        Object.entries(this.preferenceCategories).map(([key, category]) => [
+          key,
+          Number(category?.min_per_7_days ?? 0),
+        ]),
+      );
       this.template = {
         protein: numberOr(template?.protein, 1),
         vegetable: numberOr(template?.vegetable, 1),
@@ -85,6 +111,10 @@ export class MpSettingsView extends MpView {
     this.template = { ...this.template, [key]: value };
   }
 
+  setPreference(key, value) {
+    this.preferences = { ...this.preferences, [key]: value };
+  }
+
   buildSettingsPayload() {
     const payload = {
       window_days: this.form.window_days,
@@ -101,10 +131,21 @@ export class MpSettingsView extends MpView {
     if (!this.form || this.saving) return;
     this.saving = true;
     try {
+      const preferenceUpdates = Object.entries(this.preferenceCategories)
+        .filter(([, category]) => category)
+        .map(([key, category]) =>
+          api.categories.update(category.id, {
+            name: category.name,
+            min_per_7_days: this.preferences[key],
+            item_ids: category.item_ids,
+          }),
+        );
       await Promise.all([
         api.settings.update(this.buildSettingsPayload()),
         api.template.update({ ...this.template }),
+        ...preferenceUpdates,
       ]);
+      if (preferenceUpdates.length) await api.menu.replan();
       this.usdaKey = '';
       toast(this, t('settings.saved'));
       if (this.form.language !== this.loadedLanguage) {
@@ -212,6 +253,33 @@ export class MpSettingsView extends MpView {
     </section>`;
   }
 
+  renderPreferences() {
+    const categories = Object.entries(this.preferenceCategories).filter(([, category]) => category);
+    if (!categories.length) {
+      return html`<section class="card stack">
+        <h3>${t('onboarding.preferences.diet')}</h3>
+        <p class="muted">${t('settings.preferences.noCategories')}</p>
+      </section>`;
+    }
+    return html`<section class="card stack">
+      <h3>${t('onboarding.preferences.diet')}</h3>
+      <p class="muted">${t('settings.preferences.help')}</p>
+      <div class="grid-2">
+        ${categories.map(
+          ([key]) => html`<md-outlined-text-field
+            label=${t(`onboarding.preferences.${key}`)}
+            type="number"
+            min="0"
+            max="7"
+            .value=${String(this.preferences[key])}
+            supporting-text=${t('onboarding.preferences.perWeek')}
+            @change=${(event) => this.setPreference(key, Number(event.target.value))}
+          ></md-outlined-text-field>`,
+        )}
+      </div>
+    </section>`;
+  }
+
   renderGeneral() {
     return html`<section class="card stack">
       <h3>${t('settings.general.title')}</h3>
@@ -253,6 +321,7 @@ export class MpSettingsView extends MpView {
       </div>
       ${this.renderWindow()}
       ${this.renderHousehold()}
+      ${this.renderPreferences()}
       ${this.renderBalance()}
       ${this.renderTemplate()}
       ${this.renderGeneral()}

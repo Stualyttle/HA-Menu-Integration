@@ -124,6 +124,7 @@ describe('createApiClient', () => {
     const client = createApiClient({ fetchImpl });
     const rule = { kind: 'blacklist', scope: 'combination', category_ids: [2, 3], enabled: true };
     const document = { schema_version: 1, items: [] };
+    const setup = { language: 'nl', seed_ingredients: true, seed_meals: false };
 
     await client.menu.replan();
     await client.items.lookupNutrition(4);
@@ -132,6 +133,8 @@ describe('createApiClient', () => {
     await client.exportData();
     await client.importPreview(document);
     await client.importData(document, { include_settings: true, include_history: false });
+    await client.onboarding.get();
+    await client.onboarding.complete(setup);
 
     expect(fetchImpl.mock.calls.map(([url, init]) => [url, init.method])).toEqual([
       ['api/menu/replan', 'POST'],
@@ -141,6 +144,8 @@ describe('createApiClient', () => {
       ['api/export', 'GET'],
       ['api/import/preview', 'POST'],
       ['api/import', 'POST'],
+      ['api/onboarding', 'GET'],
+      ['api/onboarding', 'POST'],
     ]);
     expect(JSON.parse(fetchImpl.mock.calls[2][1].body)).toEqual({ rule, rule_id: 12 });
     expect(JSON.parse(fetchImpl.mock.calls[5][1].body)).toEqual(document);
@@ -149,5 +154,6 @@ describe('createApiClient', () => {
       include_settings: true,
       include_history: false,
     });
+    expect(JSON.parse(fetchImpl.mock.calls[8][1].body)).toEqual(setup);
   });
 });

@@ -7,6 +7,7 @@ from app.api.io import router as io_router
 from app.api.items import router as items_router
 from app.api.menu import router as menu_router
 from app.api.nutrition import router as nutrition_router
+from app.api.onboarding import router as onboarding_router
 from app.api.rules import router as rules_router
 from app.api.rules_check import router as rules_check_router
 from app.api.settings import router as settings_router
@@ -21,6 +22,7 @@ DATA_ROUTERS: tuple[APIRouter, ...] = (
     rules_check_router,
     stock_router,
     settings_router,
+    onboarding_router,
     warnings_router,
     menu_router,
     sync_router,

@@ -9,6 +9,7 @@ import { errorMessage } from '../../shared/api/errors.js';
 import { resolveLocale } from '../../shared/i18n/index.js';
 import { setLocale, t } from '../../shared/i18n/current.js';
 import './views/menu-view.js';
+import './views/dashboard-view.js';
 import './views/items-view.js';
 import './views/item-dialog.js';
 import './views/categories-view.js';
@@ -16,8 +17,10 @@ import './views/rules-view.js';
 import './views/stock-view.js';
 import './views/settings-view.js';
 import './views/import-export-view.js';
+import './views/onboarding-view.js';
 
 const TABS = [
+  { id: 'home', label: 'tabs.home', icon: 'home' },
   { id: 'menu', label: 'tabs.menu', icon: 'calendar' },
   { id: 'items', label: 'tabs.items', icon: 'items' },
   { id: 'categories', label: 'tabs.categories', icon: 'tag' },
@@ -41,6 +44,10 @@ export class MpApp extends MpView {
     status: { state: true },
     errorText: { state: true },
     tab: { state: true },
+    setupRequired: { state: true },
+    initialSettings: { state: true },
+    onboarding: { state: true },
+    initialTemplate: { state: true },
     toasts: { state: true },
     dialogOpen: { state: true },
     editItemId: { state: true },
@@ -52,7 +59,11 @@ export class MpApp extends MpView {
     super();
     this.status = 'loading';
     this.errorText = '';
-    this.tab = 'menu';
+    this.tab = 'home';
+    this.setupRequired = false;
+    this.initialSettings = null;
+    this.onboarding = null;
+    this.initialTemplate = null;
     this.toasts = [];
     this.dialogOpen = false;
     this.confirmation = null;
@@ -85,11 +96,15 @@ export class MpApp extends MpView {
   async load() {
     this.status = 'loading';
     try {
-      const settings = await api.settings.get();
+      const [settings, onboarding] = await Promise.all([api.settings.get(), api.onboarding.get()]);
       const locale = localeFromSettings(settings);
       setLocale(locale);
       document.documentElement.lang = locale;
       document.title = t('app.title');
+      this.initialSettings = settings;
+      this.onboarding = onboarding;
+      this.setupRequired = Boolean(onboarding.required);
+      this.initialTemplate = this.setupRequired ? await api.template.get() : null;
       this.status = 'ready';
     } catch (err) {
       setLocale('en');
@@ -149,6 +164,10 @@ export class MpApp extends MpView {
     this.dialogOpen = false;
   }
 
+  onSetupComplete() {
+    this.load();
+  }
+
   selectTab(id) {
     this.tab = id;
     if (window.location.hash !== `#${id}`) history.replaceState(null, '', `#${id}`);
@@ -165,6 +184,8 @@ export class MpApp extends MpView {
 
   renderView() {
     switch (this.tab) {
+      case 'home':
+        return html`<mp-dashboard-view .version=${this.itemsVersion}></mp-dashboard-view>`;
       case 'items':
         return html`<mp-items-view .version=${this.itemsVersion}></mp-items-view>`;
       case 'categories':
@@ -183,7 +204,12 @@ export class MpApp extends MpView {
   }
 
   renderTabs() {
-    return html`<nav class="sidebar" aria-label="${t('app.navLabel')}">
+    return html`<aside class="sidebar">
+      <a class="brand" href="#home" aria-label=${t('app.title')}>
+        <span class="brand-mark" aria-hidden="true">MP</span>
+        <span class="brand-copy"><strong>${t('app.title')}</strong><small>${t('app.brandSubtitle')}</small></span>
+      </a>
+      <nav aria-label="${t('app.navLabel')}">
       <div class="tabs" role="tablist" aria-orientation="vertical" @keydown=${(e) => this.onTabKey(e)}>
         ${TABS.map(
           (item) => html`<button
@@ -196,7 +222,9 @@ export class MpApp extends MpView {
           >${icon(item.icon)}<span>${t(item.label)}</span></button>`,
         )}
       </div>
-    </nav>`;
+      </nav>
+      <div class="sidebar-footer">${t('app.sidebarFooter')}</div>
+    </aside>`;
   }
 
   renderToasts() {
@@ -217,10 +245,30 @@ export class MpApp extends MpView {
         <md-text-button @click=${() => this.load()}>${t('app.retry')}</md-text-button>
       </div></div>`;
     }
+    if (this.setupRequired) {
+      return html`<mp-onboarding-view
+        .settings=${this.initialSettings}
+        .setup=${this.onboarding}
+        .template=${this.initialTemplate}
+        @setup-complete=${() => this.onSetupComplete()}
+      ></mp-onboarding-view>
+      ${this.toasts.length ? this.renderToasts() : nothing}`;
+    }
     return html`
       <div class="shell">
         ${this.renderTabs()}
-        <main class="main">${this.renderView()}</main>
+        <div class="workspace">
+          <header class="topbar">
+            <div>
+              <span class="eyebrow">${t('app.workspace')}</span>
+              <h1>${t(TABS.find((item) => item.id === this.tab)?.label ?? 'tabs.home')}</h1>
+            </div>
+            <md-outlined-button @click=${() => this.selectTab('settings')}>
+              ${icon('cog')} ${t('tabs.settings')}
+            </md-outlined-button>
+          </header>
+          <main class="main">${this.renderView()}</main>
+        </div>
       </div>
       <mp-item-dialog
         .open=${this.dialogOpen}

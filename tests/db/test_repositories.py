@@ -48,7 +48,7 @@ async def _starter_dinner_parts(stores: Stores) -> tuple[int, int, int]:
 
 
 def test_schema_version_is_current(stores: Stores) -> None:
-    assert stores.database.schema_version == 2
+    assert stores.database.schema_version == 3
 
 
 def test_reopen_does_not_reseed_or_change_version(tmp_path: Path) -> None:
@@ -59,7 +59,7 @@ def test_reopen_does_not_reseed_or_change_version(tmp_path: Path) -> None:
 
     second = Stores.open(path)
     try:
-        assert second.database.schema_version == 2
+        assert second.database.schema_version == 3
         count = second.database.query_one("SELECT COUNT(*) AS n FROM item_categories")
         assert count["n"] == 0
     finally:
@@ -71,6 +71,7 @@ async def test_v1_database_upgrades_without_losing_existing_items(tmp_path: Path
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     _v1(conn)
+    conn.execute("DELETE FROM settings WHERE key = 'setup_complete'")
     conn.execute(
         "INSERT INTO items (name, type, portion_grams, fat_source, track_stock, created_at,"
         " updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -82,7 +83,8 @@ async def test_v1_database_upgrades_without_losing_existing_items(tmp_path: Path
 
     stores = Stores.open(path)
     try:
-        assert stores.database.schema_version == 2
+        assert stores.database.schema_version == 3
+        assert stores.settings.get_all()["setup_complete"] is True
         item = await _find_item(stores, "Existing family meal")
         assert item.portion_grams == 450
         assert item.track_stock is True

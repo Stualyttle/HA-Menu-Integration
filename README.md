@@ -6,11 +6,12 @@ A Home Assistant integration and add-on that plans healthy dinners for a rolling
 
 ## What it does
 
-- **Add-on** (sidebar panel "Menu Planner"): register menu items, link them to categories, set black and white lists, tune the generator, and import or export data.
+- **Add-on** (sidebar panel "Menu Planner"): a Material Web overview and first-run wizard, plus menu, ingredient, category, stock, rules, settings, and import/export screens.
 - **Integration**: connects Home Assistant to the add-on and exposes sensors, services, websocket commands, and the automatically registered Lovelace card bundle.
 - **Lovelace cards**: today's dinner with eaten/swap actions, stock checks with a non-mutating impact preview, and an expandable menu window.
 - **Planner**: generates dinners over a rolling window (7 to 60 days, default 14). Hard rules: blacklisted items, no items marked out of stock, and template counts. Soft rules: category minimums, repeat gap, whitelist, and balance. Details in [docs/PLAN.md](docs/PLAN.md) section 6.
-- **Starter catalog**: includes a broad Belgian/European family-food selection across poultry and meat cuts, fish, vegetarian proteins, vegetables, grains, potatoes, bread, pasta staples, and standalone meals such as spaghetti bolognese, lasagne, macaroni and cheese, and pizza. Complete meals can have their own stock and nutrition information; they are not ingredient recipes and do not deduct ingredient stock.
+- **Onboarding**: choose a fixed English or Dutch interface, preview the exact localized starter content, select ingredients and complete meals separately, or start empty. Planning window, dietary category minimums, dinner slots, and balance targets can be configured during setup and changed later.
+- **Starter catalog**: selectable English and curated Dutch ingredient and complete-meal packs. Complete meals can have their own stock and nutrition information; they are standalone choices, not ingredient recipes.
 
 ## Supported hardware
 
