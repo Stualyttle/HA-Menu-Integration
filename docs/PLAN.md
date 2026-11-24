@@ -2,7 +2,7 @@
 
 Working name: **Menu Planner** (integration domain `menu_planner`, add-on slug `menu_planner`).
 Progress tracking: `docs/WORKFILE.md`. Mockups: `docs/mockups/`.
-Last updated: 2026-11-04.
+Last updated: 2026-11-24 (Angular panel migration).
 
 Items marked **(proposal)** are implementation choices not yet confirmed by the user. Items marked **(assumed)** are interpretations to check in review (see section 15).
 
@@ -48,7 +48,7 @@ Out of scope (v1): breakfast and lunch, allergies and diets, stock quantities, i
 
 - **Add-on** (`addon/`): Python 3.12, FastAPI, SQLite in `/data`. Owns all data, the generator, nutrition lookup, and import/export. Serves the panel through Ingress.
 - **Integration** (`custom_components/menu_planner/`): config flow (discovery), coordinator (polls the add-on), sensors, websocket commands for the cards, services for automations, persistent notifications, shopping-list sync, card bundle serving.
-- **Frontend** (`frontend/`): Lit + Material Web (Material 3), with HA theme variables (decided). Two Vite bundles: `panel` (add-on UI) and `cards` (Lovelace).
+- **Frontend** (`frontend/`): the add-on panel is Angular with Angular Material, using strict TypeScript, standalone components, and Angular Router hash URLs. It uses the bundled Angular Material prebuilt theme and has no app-authored panel CSS. Dashboard quick links use Angular Router and specify opening in a new tab. The Angular build outputs to `addon/app/static/panel/`; `deployUrl: "assets/"` routes generated bundle requests through the existing `/assets` Ingress mount served by the add-on. Lit and Vite remain for the Lovelace card bundle and shared legacy helpers; Vite builds the cards.
 
 ### 4.2 Data-flow rules
 
@@ -253,7 +253,10 @@ Sensors **(proposal)**: `sensor.menu_planner_today_dinner`, `sensor.menu_planner
 ```
 custom_components/menu_planner/   HA integration (Python), www/ (built cards), brand/icon.png
 addon/                            config.yaml, Dockerfile, rootfs/ (s6 services), app/ (FastAPI, SQLite, domain, nutrition, io)
-frontend/                         Lit + Material Web: panel/, cards/, shared/ (theme, i18n, API client)
+frontend/
+  panel/                           Angular + Angular Material app; Angular CLI build -> addon/app/static/panel/
+  cards/                           Lit Lovelace cards; Vite build -> custom_components/menu_planner/www/
+  shared/                          API client, i18n, and legacy helpers (some Lit)
 tests/                            pytest: domain, db, api, io, integration
 docs/                             PLAN.md, WORKFILE.md, API.md (Phase 1), mockups/
 .github/workflows/                CI
@@ -275,7 +278,7 @@ Packaging:
 
 - Unit tests (pytest): generator (hard rules, soft priorities, feasibility), rules (blacklist, whitelist, minimums, repeat gap), balance scoring, roll-over and catch-up (injected clock), stock yes/no flow, import and export (merge and skip), nutrition clients (recorded fixtures, no live calls in CI).
 - API tests (FastAPI TestClient): endpoints, token check on the internal listener, no token on the ingress listener.
-- Frontend tests (Vitest): shared logic (i18n, API client, view models) and builds of the panel and cards bundles.
+- Frontend tests (Vitest): shared logic (i18n, API client, view models) and panel/card behavior. From `frontend/panel/`, run `npm run typecheck`, `npm test`, `npm run build`, and `npm run build:cards`. The Angular build writes the panel to `addon/app/static/panel/`; the Vite card build writes `custom_components/menu_planner/www/menu-planner-cards.js`.
 - Integration tests: config flow with discovery, sensors, websocket commands (`pytest-homeassistant-custom-component`).
 - CI (GitHub Actions): ruff, pytest, `npm ci`, Vitest, build, hassfest, HACS action, add-on image build for amd64 and aarch64 (no push on pull requests).
 - Manual checklist before release: install from the repository, discovery, cards, stock yes and no, midnight roll-over (a dev clock override such as `MENU_PLANNER_FAKE_NOW` **(proposal)**), import and export round trip.
@@ -290,7 +293,7 @@ Packaging:
 | 3 | Domain engine: generator, rules, scoring, roll-over, stock, swap, feasibility | 1 (in-memory fakes until 2 lands) | engine and unit tests |
 | 4 | Nutrition: Open Food Facts, USDA, cache, retry, manual entry | 2 | nutrition module and fixtures |
 | 5 | Import and export: schema, preview, merge | 2 | io module and tests |
-| 6 | Panel UI (Lit + Material Web): all tabs, EN and NL | 1 | panel bundle |
+| 6 | Panel UI (Angular + Angular Material): standalone routed screens, strict TypeScript, EN and NL | 1 | Angular panel bundle in `addon/app/static/panel/` |
 | 7 | Integration: coordinator, sensors, websocket commands, services, notifications, shopping sync, card serving | 1 (3 for real data) | integration |
 | 8 | Lovelace cards: three cards, visual editors, EN and NL | 6, 7 | cards bundle |
 | 9 | Tests and CI | 3 to 8 | green pipelines |
@@ -344,6 +347,7 @@ Rules: each agent edits only the files it owns. API changes go through `docs/API
 - USDA API key: skipped for now (optional; without it the USDA step is skipped).
 - Assumptions in section 15: accepted by the user.
 - Time zone source, dinner title, and card element name: decided (section 4.5, section 10).
+- Panel migration decision: replace the Lit panel with Angular + Angular Material. Keep Lit and Vite only for Lovelace cards/shared legacy helpers; use hash routing and the existing `/assets` Ingress mount. The Angular panel build targets `addon/app/static/panel/`.
 
 ## Appendix A: Starter content
 

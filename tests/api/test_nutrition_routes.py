@@ -21,7 +21,14 @@ from fastapi.testclient import TestClient
 from app.api import nutrition as nutrition_api
 from app.db import Stores
 from app.main import create_app
-from app.models import WarningCode, WarningRecord, WarningSubject
+from app.models import (
+    Nutrition,
+    NutritionSource,
+    NutritionStatus,
+    WarningCode,
+    WarningRecord,
+    WarningSubject,
+)
 
 OFF_PRODUCTS = [
     {
@@ -185,6 +192,34 @@ def test_put_manual_stores_and_is_verified(client: TestClient) -> None:
     assert body["verified"] is True
     assert body["kcal"] == pytest.approx(250)
     assert body["fiber_g"] == pytest.approx(3)
+
+
+def test_verified_item_filter_excludes_unconfirmed_automatic_match(
+    client: TestClient, stores: Stores
+) -> None:
+    item_id = _create_item(client, "Chicken breast fillet")
+    asyncio.run(
+        stores.nutrition.save_nutrition(
+            Nutrition(
+                item_id=item_id,
+                source=NutritionSource.OPEN_FOOD_FACTS,
+                status=NutritionStatus.OK,
+                external_id="4006381333931",
+                matched_name="Chicken breast fillet",
+                kcal=110,
+                protein_g=23.1,
+                carbs_g=0.4,
+                fat_g=1.9,
+                user_confirmed=False,
+            )
+        )
+    )
+
+    assert client.get("/api/items", params={"verified": "true"}).json() == []
+    unverified_ids = [
+        item["id"] for item in client.get("/api/items", params={"verified": "false"}).json()
+    ]
+    assert item_id in unverified_ids
 
 
 def test_put_manual_rejects_incomplete_data(client: TestClient) -> None:

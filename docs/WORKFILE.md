@@ -6,16 +6,16 @@ Only the coordinator edits this file. Owners (A to G) are the parallel agents in
 
 Legend: `[ ]` pending, `[~]` in progress, `[x]` done, `[!]` blocked.
 
-Last updated: 2026-11-24 (dashboard and first-run onboarding batch verified)
+Last updated: 2026-11-24 (Angular panel migration documentation reconciled)
 
 ## Status
 
-- **Phase:** Phase 6 dashboard and first-run onboarding implementation is complete; browser behavior remains unchecked.
-- **Now:** Dashboard/onboarding documentation is reconciled. Ruff is clean, 354 add-on tests pass, and 24 panel tests plus the production build pass locally.
-- **Next:** Run CI on GitHub, perform the remaining live Supervisor checks, and prepare the `v0.1.0` release.
-- **Blockers:** Live Supervisor checks need HA access. Dashboard browser behavior, balance defaults, the 500-candidate cap, and whether household size scales portions remain unverified.
+- **Phase:** Angular panel migration is implemented; local checks pass, while browser and live HA verification remain unverified.
+- **Now:** Typecheck, Angular build, 24 panel tests, card bundle build, Ruff (88 files), and 355 add-on tests pass.
+- **Next:** Verify the panel in a browser and against live Home Assistant; then continue CI/release validation.
+- **Blockers:** Browser/live HA checks need an environment. Balance defaults, the 500-candidate cap, and household portion scaling remain unverified. `npm audit` reports 33 dev-dependency findings (3 critical, 8 high, 21 moderate, 1 low); unresolved. Production dependency audit is clean.
 
-Current task: refreshed dashboard and first-run onboarding implemented; related documentation reconciled. No browser or integration tests were run for this batch.
+Current task: Angular panel migration documentation reconciled. Browser/live Home Assistant verification remains unverified.
 
 Verification (wave 2): ruff check and format clean. Add-on pytest 336 passed. Integration pytest 33 passed. Panel Vitest 20 passed; production build succeeded. actionlint clean. 39 API operations, no duplicates. Generated dinner read/write behavior and live API request shapes have regression tests.
 
@@ -34,7 +34,7 @@ Depends on: none
 - [x] Review of plan and mockups with you
 - [x] Assumptions confirmed (PLAN section 15): accepted
 - [x] Open items answered (PLAN section 17): license MIT; brand icon placeholder in Phase 1; USDA key skipped for now
-- [x] Decisions: frontend Lit + Material Web; time zone from integration sync with `TZ` fallback; Today's card shows item names joined with " · "; window card is `menu-planner-window-card`; Home Assistant with Supervisor available for Phase 1 checks
+- [x] Decisions: frontend panel migrated to Angular + Angular Material; Lit/Vite retained for Lovelace cards and shared legacy helpers; time zone from integration sync with `TZ` fallback; Today's card shows item names joined with " · "; window card is `menu-planner-window-card`; Home Assistant with Supervisor available for Phase 1 checks
 
 ## Phase 1: Scaffolding and API contract
 
@@ -99,18 +99,19 @@ Depends on: 2. Owner: C. Status: partial (`5e39391`).
 - [x] Round-trip tests (`tests/io/`)
 - [x] HTTP routes: GET `/api/export`, POST `/api/import/preview`, POST `/api/import` (`addon/app/api/io.py`). History import returns 400.
 
-## Phase 6: Panel UI (Lit + Material Web)
+## Phase 6: Panel UI (Angular + Angular Material)
 
-Depends on: 1. Owner: E. Status: refreshed dashboard/onboarding implemented and verified locally; browser behavior not yet checked.
+Depends on: 1. Owner: E. Status: Angular migration and local checks verified; browser/live HA behavior not yet checked.
 
-- [x] Shared theme, i18n (EN and NL), and API client (`frontend/shared/`)
+- [x] Shared i18n (EN and NL) and API client (`frontend/shared/`)
 - [x] Menu, Items, Categories, Rules, Stock, Settings, and Import / export tabs (`frontend/panel/`)
 - [x] Warnings banner
 - [x] Vitest (24 tests pass)
-- [ ] Browser check.
+- [ ] Browser and live Home Assistant verification.
 - [x] Refreshed dashboard overview and first-run onboarding: localized language selection and starter preview, optional ingredients/meals, and planning preferences.
 - [x] Align panel API calls with implemented backend routes. Replan and retry lookups use real endpoints; rule-check, nutrition lookup, and import payloads match the contract.
-- [x] Bundle rebuilt (`addon/app/static/panel/`). Grep for external URLs: pending.
+- [x] Angular bundle rebuilt (`addon/app/static/panel/`); build uses the existing `/assets` Ingress path.
+- [x] Strict TypeScript typecheck and panel tests (24 passed).
 - [x] Serve the built panel and assets from the unauthenticated Ingress listener; keep the internal token-protected listener API-only.
 - [x] Use a localized Material dialog for item, category, and rule deletion; tab navigation does not request confirmation.
 
@@ -154,6 +155,7 @@ Depends on: 9. Owner: G.
 
 | Date | Done |
 |---|---|
+| 2026-11-24 | Documented the completed Angular panel migration. Verified Angular typecheck/build, 24 panel tests, Vite card build, Ruff clean (88 files), and 355 add-on tests; browser/live HA verification remains unverified. `npm audit --omit=dev` is clean; 33 dev-dependency findings remain unresolved (3 critical, 8 high, 21 moderate, 1 low). |
 | 2026-11-24 | Refreshed dashboard and first-run onboarding documented against the implementation. Verified Ruff clean; full add-on suite 354 passed (temporary Python 3.14 venv; repository targets Python 3.12); panel tests 24 passed and production build succeeded; `git diff --check` clean. Browser checks and integration tests not run. |
 | 2026-11-04 | Repository inspected: greenfield, one commit (`0e2da4f`). |
 | 2026-11-04 | Requirements gathered (five question rounds). HA add-on, discovery, and card docs checked. |

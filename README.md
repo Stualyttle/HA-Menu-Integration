@@ -6,7 +6,7 @@ A Home Assistant integration and add-on that plans healthy dinners for a rolling
 
 ## What it does
 
-- **Add-on** (sidebar panel "Menu Planner"): a Material Web overview and first-run wizard, plus menu, ingredient, category, stock, rules, settings, and import/export screens.
+- **Add-on** (sidebar panel "Menu Planner"): an Angular + Angular Material overview and first-run wizard, plus menu, ingredient, category, stock, rules, settings, and import/export screens.
 - **Integration**: connects Home Assistant to the add-on and exposes sensors, services, websocket commands, and the automatically registered Lovelace card bundle.
 - **Lovelace cards**: today's dinner with eaten/swap actions, stock checks with a non-mutating impact preview, and an expandable menu window.
 - **Planner**: generates dinners over a rolling window (7 to 60 days, default 14). Hard rules: blacklisted items, no items marked out of stock, and template counts. Soft rules: category minimums, repeat gap, whitelist, and balance. Details in [docs/PLAN.md](docs/PLAN.md) section 6.
@@ -61,12 +61,15 @@ PYTHONPATH=addon python -m pytest -q --ignore=tests/integration
 # Integration tests (needs pytest-homeassistant-custom-component)
 python -m pytest -q tests/integration
 
-# Panel (Lit + Material Web)
-cd frontend/panel && npm ci && npm test && npm run build
+# Angular panel and Lovelace cards
+cd frontend/panel && npm ci
+npm run typecheck
+npm test
+npm run build
 npm run build:cards
 ```
 
-The panel build writes to `addon/app/static/panel/`; the Lovelace card build writes to `custom_components/menu_planner/www/menu-planner-cards.js`. Commit both generated bundles with their source changes.
+The Angular panel uses strict TypeScript, standalone components and hash-based routing, with the bundled Angular Material prebuilt theme and no app-authored panel CSS. Dashboard quick links use Angular Router and specify opening in a new tab. The Angular build writes to `addon/app/static/panel/`; generated bundle URLs use the existing `/assets` Ingress path, where the add-on serves the panel files. The Lovelace cards and shared legacy helpers still use Lit; Vite builds the card bundle to `custom_components/menu_planner/www/menu-planner-cards.js`. Commit generated bundles with their source changes.
 
 ## Builds and CI
 

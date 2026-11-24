@@ -10,7 +10,7 @@ from app.api.deps import StoresDep
 from app.api.lookups import check_category_ids, require_item
 from app.api.schemas import ItemIn, ItemOut
 from app.db import Stores
-from app.models import Item, ItemType, NutritionStatus
+from app.models import Item, ItemType, NutritionSource, NutritionStatus
 
 router = APIRouter(prefix="/api/items", tags=["items"])
 
@@ -44,7 +44,12 @@ async def _to_out(stores: Stores, item: Item, membership: dict[int, set[int]]) -
 
 
 def _is_verified(out: ItemOut) -> bool:
-    return out.nutrition is not None and out.nutrition.status == NutritionStatus.OK.value
+    nutrition = out.nutrition
+    return (
+        nutrition is not None
+        and nutrition.status == NutritionStatus.OK.value
+        and (nutrition.source == NutritionSource.MANUAL.value or nutrition.user_confirmed)
+    )
 
 
 @router.get("", response_model=list[ItemOut])

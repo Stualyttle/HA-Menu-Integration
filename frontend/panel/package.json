@@ -3,16 +3,31 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "ng build",
     "build:cards": "vite build --config ../cards/vite.config.cjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
-    "@material/web": "2.5.0",
-    "lit": "3.3.3"
+    "@angular/animations": "20.3.35",
+    "@angular/cdk": "20.2.14",
+    "@angular/common": "20.3.35",
+    "@angular/compiler": "20.3.35",
+    "@angular/core": "20.3.35",
+    "@angular/forms": "20.3.35",
+    "@angular/material": "20.2.14",
+    "@angular/platform-browser": "20.3.35",
+    "@angular/router": "20.3.35",
+    "lit": "3.3.3",
+    "rxjs": "7.8.2",
+    "zone.js": "0.15.1"
   },
   "devDependencies": {
+    "@angular/build": "20.3.15",
+    "@angular/cli": "20.3.15",
+    "@angular/compiler-cli": "20.3.35",
+    "typescript": "5.9.3",
     "vite": "8.3.5",
-    "vitest": "5.1.0"
+    "vitest": "3.2.7"
   }
 }

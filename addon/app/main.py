@@ -78,7 +78,7 @@ def create_app(
         panel_dir = Path(__file__).parent / "static" / "panel"
         app.mount(
             "/assets",
-            StaticFiles(directory=panel_dir / "assets"),
+            StaticFiles(directory=panel_dir),
             name="panel-assets",
         )
 

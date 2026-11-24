@@ -11,14 +11,15 @@ def test_ingress_serves_panel_and_built_assets() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "<mp-app></mp-app>" in response.text
+    assert "<mp-root></mp-root>" in response.text
 
-    assets = re.findall(r'(?:src|href)="\./(assets/[^"]+)"', response.text)
+    assets = re.findall(r'(?:src|href)="(assets/[^"]+)"', response.text)
     assert assets
     for asset in assets:
         asset_response = client.get(f"/{asset}")
         assert asset_response.status_code == 200
-        assert asset_response.content
+    main_bundle = next(asset for asset in assets if re.fullmatch(r"assets/main-[^/]+\.js", asset))
+    assert client.get(f"/{main_bundle}").content
 
 
 def test_ingress_unknown_api_route_keeps_json_not_found() -> None:
